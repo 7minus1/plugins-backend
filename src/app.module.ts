@@ -5,6 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ResumeModule } from './resume/resume.module';
 import { Resume } from './resume/entities/resume.entity';
+import { CloudStorageModule } from './cloud-storage/cloud-storage.module';
+import { FeishuModule } from './feishu/feishu.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { Resume } from './resume/entities/resume.entity';
       inject: [ConfigService],
     }),
     ResumeModule,
+    CloudStorageModule,
+    FeishuModule,
   ],
   controllers: [AppController],
   providers: [AppService],
