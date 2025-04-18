@@ -30,7 +30,7 @@ export interface CreateBitableRecordRequest {
     // error_code: string;
     // file_md5: string;
     // message: string;
-    file_url: string;
+    file_url: Array<Object>;
   };
 }
 

@@ -22,29 +22,31 @@ export class ResumeService {
 
   }
 
-  async create(createResumeDto: CreateResumeDto, file: Express.Multer.File) {
-    // TODO: filename命名，要唯一性，防止覆盖
-    // 重新命名文件
-    console.log("file", file);
+  async processResume(file: Express.Multer.File) {
+    // TODO: 文件的有效期，可以简历解析完毕后就自动删除
+    // filename命名，要唯一性，防止覆盖，重新命名文件
     const fileExtension = file.originalname.split('.').pop(); // 获取文件扩展名
     const newFileName = `${Date.now()}.${fileExtension}`; // 生成新的文件名
     
     console.log("newFileName", newFileName);
     const fileInfo = await this.cloudStorage.uploadFile(
-      // file.originalname,
       newFileName,
       file.buffer
     );
     const fileName = fileInfo.name;
-    const fileUrl = fileInfo.url;   // http://bucket4resume.oss-cn-wulanchabu.aliyuncs.com/resume.pdf
+    const fileUrl = fileInfo.url;
 
+    // 测试上传文件到飞书多维表格
+    const fileToken = await this.feishuService.uploadFile(file, newFileName);
+    console.log("fileToken", fileToken);
     const parseResult = await this.cozeApi.executeResumeParser(fileName, fileUrl);
 
     // 建表
     // const create_res = await this.feishuService.createBitable();
     // console.log(create_res);
     // const newTableId = create_res.data.table_id;
-
+    // return {newTableId};
+    
     const parsedResume: ResumeParserDto = {
       name: parseResult.name,
       mobile: parseResult.mobile,
@@ -74,10 +76,11 @@ export class ResumeService {
       process.env.FEISHU_TABLE_ID,
       {
         fields: {
+          file_url: [fileToken],  // 新增附件字段
           name: parsedResume.name || '',
           mobile: parsedResume.mobile,
           email: parsedResume.email,
-          gender: parsedResume.gender.toString() || '-1',
+          gender: parsedResume.gender.toString() || '0',
           work_year: parsedResume.work_year?.toString() || '0',
           home_location: parsedResume.home_location,
           self_evaluation: parsedResume.self_evaluation,
@@ -94,7 +97,6 @@ export class ResumeService {
           career_list: JSON.stringify(parsedResume.career_list),
           education_list: JSON.stringify(parsedResume.education_list),
           project_list: JSON.stringify(parsedResume.project_list),
-          file_url: fileUrl
         }
       }
     );
@@ -103,161 +105,98 @@ export class ResumeService {
     };
   }
 
-  async processResume2(file: Express.Multer.File) {
-    const fileUrl = await this.cloudStorage.uploadFile(
-      file.originalname,
-      file.buffer
-    );
-    
-    // const result = await this.cozeApi.executeResumeParser(
-    //   file.originalname,
-    //   fileUrl
-    // );
-    
-    // await this.feishuService.createRecord(
-    //   process.env.FEISHU_APP_TOKEN,
-    //   process.env.FEISHU_TABLE_ID,
-    //   result
-    // );
-    
-    // return result;
-    return null;
-  }
-
-  async processResume(file: Express.Multer.File) {
-    const fileInfo = await this.cloudStorage.uploadFile(
-      file.originalname,
-      file.buffer
-    );
-    // const fileUrl = fileInfo.url;
-    // const fileName = fileInfo.name;
-    
-    // 调用 Coze API 解析简历
-    // const parseResult = await this.cozeApi.executeResumeParser(fileName, fileUrl);
-
-
-    // if (feishuResponse.error) {
-    //   throw new Error(`飞书表格记录创建失败: ${feishuResponse.error}`);
-    // }
-
-
-    // 返回的parseResult示例
-    // const parseResult = {
-    //     "award_list": [],
-    //     "career_list": [
-    //         {
-    //             "company": "XX科技有限公司",
-    //             "end_date": "2021-06-01",
-    //             "end_time": "2021-06-01",
-    //             "job_description": "运营 App 内的 UGC“话题”功能，每天提出一个学习、教育类话题，搜集素材、撰写引导文案、配图、上线话题、总结 UGC 进行二次传播，最高话题活跃度达到 App 全站流量的 1／5 采编学习类文章、教程等、整合成适合微信公众号发布的内容，并撰写标题和导读，共发表文章 20＋篇，平均阅读量 2w＋，最高阅读达到 6w＋",
-    //             "start_date": "2021-02-01",
-    //             "start_time": "2021-02-01",
-    //             "title": "UGC内容运营实习生",
-    //             "type": 1,
-    //             "type_str": "实习"
-    //         },
-    //         {
-    //             "company": "XX科技有限公司",
-    //             "end_date": "2019-09-01",
-    //             "end_time": "2019-09-01",
-    //             "job_description": "负责在线教育类 app 专栏的内容撰写、审稿和更新。平均每周撰写 3 篇专栏文章，平均阅读量 2w＋统计用户专栏阅读数据并归纳用户感兴趣的话题，同时根据话题调整写作方向，阅读量成功提升 20％",
-    //             "start_date": "2019-06-01",
-    //             "start_time": "2019-06-01",
-    //             "title": "内容运营实习生",
-    //             "type": 1,
-    //             "type_str": "实习"
-    //         }
-    //     ],
-    //     "certificate_list": [],
-    //     "competition_list": [],
-    //     "content": "jMk-YZ14202504121701\n教育经历\t\t\t\t\nXX大学\n传播学\t本科\n2018年09月\t\t-\t2022年06月\n工作经历\t\t\t\t\nXX科技有限公司\nUGC内容运营实习生\n2021年02月\t\t-\t2021年06月\n运营App内的UGC“话题”功能，每天提出一个学习、教育类话题，搜集素材、撰写引导文案、配图、上线话题、总结UGC进行二次传\n播，最高话题活跃度达到App全站流量的1/5\n采编学习类文章、教程等、整合成适合微信公众号发布的内容，并撰写标题和导读，共发表文章20+篇，平均阅读量2w+，最高阅读达到\n6w+\nXX科技有限公司\n内容运营实习生\n2019年06月\t\t-\t2019年09月\n负责在线教育类app专栏的内容撰写、审稿和更新。平均每周撰写3篇专栏文章，平均阅读量2w+\n统计用户专栏阅读数据并归纳用户感兴趣的话题，同时根据话题调整写作方向，阅读量成功提升20%\n项目经历\t\t\t\t\n校园自媒体运营\n负责给校园官方微信公众号撰文，每星期平均贡献3篇图文，平均阅读量3000+\n使学校官方微信号一年内新增粉丝5000+\t，\t增长超过20%；文章平均阅读量提升18%\t，\t阅读完成率提升7%\n传播数据分析\n经授权获得本校公众号的运营数据，通过Google\tAnalytics和微信公众号官方工具分析该校园公众号的运营模式和用户画像\n通过得到的分析报告优化文章的文字、图片等，提升用户阅读完成度约14%\n使用Visual.ly将该报告的数据做可视化处理，在班级中公开展示，评为优秀报告\n工作以外经历\t\t\t\t\n公益社团活动\n负责人\n2018年09月\t\t-\t2018年10月\n作为负责人，协同体育社同事主办校级公益籌款項目，聯系各院系社聯參與活動，同時聯系多家校园自媒体推廣該活動\n在校园内组织地推和宣传，最终参与人数300+，盈利5k+，全部捐贈給公益組織\n其他\t\t\t\t\n技能：\tOffice，内容运营，数据分析，文案写作\n语言：\t英语（CET-6）\n超级简历\n188-8888-8888\t丨success@wondercv.com\n",
-    //     "cost": 2.63293051719666,
-    //     "country_code": "86",
-    //     "current_location": "",
-    //     "date_of_birth": "",
-    //     "education_list": [
-    //         {
-    //             "degree": "本科",
-    //             "end_date": "2022-06-01",
-    //             "end_time": "2022-06-01",
-    //             "major": "传播学",
-    //             "qualification": 6,
-    //             "school": "XX大学",
-    //             "start_date": "2018-09-01",
-    //             "start_time": "2018-09-01"
-    //         }
-    //     ],
-    //     "email": "success@wondercv.com",
-    //     "error_code": 0,
-    //     "file_md5": "dcb1e756d3904df195f20050716762b4",
-    //     "gender": 0,
-    //     "home_location": "",
-    //     "language_list": [
-    //         {
-    //             "description": "英语(cet-6)",
-    //             "language": 1,
-    //             "level": 2
-    //         }
-    //     ],
-    //     "message": "succ parse",
-    //     "mobile": "18888888888",
-    //     "mobile_is_virtual": false,
-    //     "name": "",
-    //     "new_content": "resume.pdf\n\n超级简历\n188-8888-8888  | success@wondercv.com\n教育经历\nxx大学\n2018年09月-2022年06月\n传播学本科\n工作经历\nxx科技有限公司 2021年02月 -2021年06月\nugc内容运营实习生\n运营app内的ugc\"话题\"功能,每天提出一个学习、教育类话题,搜集素材、撰写引导文案、配图、上线话题、总结ugc进行二次传播,最高话题活跃度达到app全站流量的1/5\n采编学习类文章、教程等、整合成适合微信公众号发布的内容,并撰写标题和导读,共发表文章20+篇,平均阅读量2w+,最高阅读达到\n6w+\nxx科技有限公司 2019年06月-2019年09月\n内容运营实习生\n负责在线教育类app专栏的内容撰写、审稿和更新。平均每周撰写3篇专栏文章,平均阅读量2w+\n统计用户专栏阅读数据并归纳用户感兴趣的话题,同时根据话题调整写作方向,阅读量成功提升20%\n项目经历\n校园自媒体运营\n负责给校园官方微信公众号撰文,每星期平均贡献3篇图文,平均阅读量3000+\n使学校官方微信号一年内新增粉丝5000+,增长超过20%;文章平均阅读量提升18%,阅读完成率提升7%\n传播数据分析\n经授权获得本校公众号的运营数据,通过google analytics和微信公众号官方工具分析该校园公众号的运营模式和用户画像\n通过得到的分析报告优化文章的文字、图片等,提升用户阅读完成度约14%\n使用visual.ly将该报告的数据做可视化处理,在班级中公开展示,评为优秀报告\n工作以外经历\n公益社团活动 2018年09月 -2018年10月\n负责人\n作为负责人,协同体育社同事主办校级公益籌款項目,聯系各院系社聯參與活動,同時聯系多家校园自媒体推廣該活動\n在校园内组织地推和宣传,最終參與數量300+,盈利5k+,全部捐贈給公益組織\n其他\n技能:office,内容运营,数据分析,文案写作\n语言:英语(cet-6)",
-    //     "project_list": [
-    //         {
-    //             "description": "负责给校园官方微信公众号撰文，每星期平均贡献 3 篇图文，平均阅读量 3000＋\n使学校官方微信号一年内新增粉丝 5000＋ ， 增长超过 20％；文章平均阅读量提升 18％， 阅读完成率提升 7％",
-    //             "end_date": "",
-    //             "end_time": "",
-    //             "name": "校园自媒体运营",
-    //             "start_date": "",
-    //             "start_time": "",
-    //             "title": ""
-    //         },
-    //         {
-    //             "description": "经授权获得本校公众号的运营数据，通过 Google Analytics 和微信公众号官方工具分析该校园公众号的运营模式和用户画像通过得到的分析报告优化文章的文字、图片等，提升用户阅读完成度约 14％\n使用 Visual.ly 将该报告的数据做可视化处理，在班级中公开展示，评为优秀报告",
-    //             "end_date": "",
-    //             "end_time": "",
-    //             "name": "传播数据分析",
-    //             "start_date": "",
-    //             "start_time": "",
-    //             "title": ""
-    //         }
-    //     ],
-    //     "self_evaluation": "",
-    //     "social_links": [],
-    //     "source_id": "",
-    //     "url_list": [],
-    //     "use_ocr": 0,
-    //     "willing_location_list": [],
-    //     "willing_position_list": [],
-    //     "work_year": 2
-    // }
-
-    return {
-      fileInfo
-      // ...parseResult,
-      // career_list: parseResult.career_list.map(item => ({
-      //   companyName: item.company,
-      //   position: item.title,
-      //   jobDescription: item.job_description,
-      //   startDate: item.start_date,
-      //   endDate: item.end_date
-      // })),
-      // education_list: parseResult.education_list.map(item => ({
-      //   schoolName: item.school,
-      //   major: item.major,
-      //   degree: item.degree,
-      //   startDate: item.start_date,
-      //   endDate: item.end_date
-      // })),
-      // fileUrl,
-      // fileName,
-      // feishuRecordId: feishuResponse.recordId
-    };
-  }
-
-
+  //   // 返回的parseResult示例
+  //   const parseResult = {
+  //     "award_list": [],
+  //     "career_list": [
+  //         {
+  //             "company": "XX科技有限公司",
+  //             "end_date": "2021-06-01",
+  //             "end_time": "2021-06-01",
+  //             "job_description": "运营 App 内的 UGC“话题”功能，每天提出一个学习、教育类话题，搜集素材、撰写引导文案、配图、上线话题、总结 UGC 进行二次传播，最高话题活跃度达到 App 全站流量的 1／5 采编学习类文章、教程等、整合成适合微信公众号发布的内容，并撰写标题和导读，共发表文章 20＋篇，平均阅读量 2w＋，最高阅读达到 6w＋",
+  //             "start_date": "2021-02-01",
+  //             "start_time": "2021-02-01",
+  //             "title": "UGC内容运营实习生",
+  //             "type": 1,
+  //             "type_str": "实习"
+  //         },
+  //         {
+  //             "company": "XX科技有限公司",
+  //             "end_date": "2019-09-01",
+  //             "end_time": "2019-09-01",
+  //             "job_description": "负责在线教育类 app 专栏的内容撰写、审稿和更新。平均每周撰写 3 篇专栏文章，平均阅读量 2w＋统计用户专栏阅读数据并归纳用户感兴趣的话题，同时根据话题调整写作方向，阅读量成功提升 20％",
+  //             "start_date": "2019-06-01",
+  //             "start_time": "2019-06-01",
+  //             "title": "内容运营实习生",
+  //             "type": 1,
+  //             "type_str": "实习"
+  //         }
+  //     ],
+  //     "certificate_list": [],
+  //     "competition_list": [],
+  //     "content": "jMk-YZ14202504121701\n教育经历\t\t\t\t\nXX大学\n传播学\t本科\n2018年09月\t\t-\t2022年06月\n工作经历\t\t\t\t\nXX科技有限公司\nUGC内容运营实习生\n2021年02月\t\t-\t2021年06月\n运营App内的UGC“话题”功能，每天提出一个学习、教育类话题，搜集素材、撰写引导文案、配图、上线话题、总结UGC进行二次传\n播，最高话题活跃度达到App全站流量的1/5\n采编学习类文章、教程等、整合成适合微信公众号发布的内容，并撰写标题和导读，共发表文章20+篇，平均阅读量2w+，最高阅读达到\n6w+\nXX科技有限公司\n内容运营实习生\n2019年06月\t\t-\t2019年09月\n负责在线教育类app专栏的内容撰写、审稿和更新。平均每周撰写3篇专栏文章，平均阅读量2w+\n统计用户专栏阅读数据并归纳用户感兴趣的话题，同时根据话题调整写作方向，阅读量成功提升20%\n项目经历\t\t\t\t\n校园自媒体运营\n负责给校园官方微信公众号撰文，每星期平均贡献3篇图文，平均阅读量3000+\n使学校官方微信号一年内新增粉丝5000+\t，\t增长超过20%；文章平均阅读量提升18%\t，\t阅读完成率提升7%\n传播数据分析\n经授权获得本校公众号的运营数据，通过Google\tAnalytics和微信公众号官方工具分析该校园公众号的运营模式和用户画像\n通过得到的分析报告优化文章的文字、图片等，提升用户阅读完成度约14%\n使用Visual.ly将该报告的数据做可视化处理，在班级中公开展示，评为优秀报告\n工作以外经历\t\t\t\t\n公益社团活动\n负责人\n2018年09月\t\t-\t2018年10月\n作为负责人，协同体育社同事主办校级公益籌款項目，聯系各院系社聯參與活動，同時聯系多家校园自媒体推廣該活動\n在校园内组织地推和宣传，最终参与人数300+，盈利5k+，全部捐贈給公益組織\n其他\t\t\t\t\n技能：\tOffice，内容运营，数据分析，文案写作\n语言：\t英语（CET-6）\n超级简历\n188-8888-8888\t丨success@wondercv.com\n",
+  //     "cost": 2.63293051719666,
+  //     "country_code": "86",
+  //     "current_location": "",
+  //     "date_of_birth": "",
+  //     "education_list": [
+  //         {
+  //             "degree": "本科",
+  //             "end_date": "2022-06-01",
+  //             "end_time": "2022-06-01",
+  //             "major": "传播学",
+  //             "qualification": 6,
+  //             "school": "XX大学",
+  //             "start_date": "2018-09-01",
+  //             "start_time": "2018-09-01"
+  //         }
+  //     ],
+  //     "email": "success@wondercv.com",
+  //     "error_code": 0,
+  //     "file_md5": "dcb1e756d3904df195f20050716762b4",
+  //     "gender": 0,
+  //     "home_location": "",
+  //     "language_list": [
+  //         {
+  //             "description": "英语(cet-6)",
+  //             "language": 1,
+  //             "level": 2
+  //         }
+  //     ],
+  //     "message": "succ parse",
+  //     "mobile": "18888888888",
+  //     "mobile_is_virtual": false,
+  //     "name": "",
+  //     "new_content": "resume.pdf\n\n超级简历\n188-8888-8888  | success@wondercv.com\n教育经历\nxx大学\n2018年09月-2022年06月\n传播学本科\n工作经历\nxx科技有限公司 2021年02月 -2021年06月\nugc内容运营实习生\n运营app内的ugc\"话题\"功能,每天提出一个学习、教育类话题,搜集素材、撰写引导文案、配图、上线话题、总结ugc进行二次传播,最高话题活跃度达到app全站流量的1/5\n采编学习类文章、教程等、整合成适合微信公众号发布的内容,并撰写标题和导读,共发表文章20+篇,平均阅读量2w+,最高阅读达到\n6w+\nxx科技有限公司 2019年06月-2019年09月\n内容运营实习生\n负责在线教育类app专栏的内容撰写、审稿和更新。平均每周撰写3篇专栏文章,平均阅读量2w+\n统计用户专栏阅读数据并归纳用户感兴趣的话题,同时根据话题调整写作方向,阅读量成功提升20%\n项目经历\n校园自媒体运营\n负责给校园官方微信公众号撰文,每星期平均贡献3篇图文,平均阅读量3000+\n使学校官方微信号一年内新增粉丝5000+,增长超过20%;文章平均阅读量提升18%,阅读完成率提升7%\n传播数据分析\n经授权获得本校公众号的运营数据,通过google analytics和微信公众号官方工具分析该校园公众号的运营模式和用户画像\n通过得到的分析报告优化文章的文字、图片等,提升用户阅读完成度约14%\n使用visual.ly将该报告的数据做可视化处理,在班级中公开展示,评为优秀报告\n工作以外经历\n公益社团活动 2018年09月 -2018年10月\n负责人\n作为负责人,协同体育社同事主办校级公益籌款項目,聯系各院系社聯參與活動,同時聯系多家校园自媒体推廣該活動\n在校园内组织地推和宣传,最終參與數量300+,盈利5k+,全部捐贈給公益組織\n其他\n技能:office,内容运营,数据分析,文案写作\n语言:英语(cet-6)",
+  //     "project_list": [
+  //         {
+  //             "description": "负责给校园官方微信公众号撰文，每星期平均贡献 3 篇图文，平均阅读量 3000＋\n使学校官方微信号一年内新增粉丝 5000＋ ， 增长超过 20％；文章平均阅读量提升 18％， 阅读完成率提升 7％",
+  //             "end_date": "",
+  //             "end_time": "",
+  //             "name": "校园自媒体运营",
+  //             "start_date": "",
+  //             "start_time": "",
+  //             "title": ""
+  //         },
+  //         {
+  //             "description": "经授权获得本校公众号的运营数据，通过 Google Analytics 和微信公众号官方工具分析该校园公众号的运营模式和用户画像通过得到的分析报告优化文章的文字、图片等，提升用户阅读完成度约 14％\n使用 Visual.ly 将该报告的数据做可视化处理，在班级中公开展示，评为优秀报告",
+  //             "end_date": "",
+  //             "end_time": "",
+  //             "name": "传播数据分析",
+  //             "start_date": "",
+  //             "start_time": "",
+  //             "title": ""
+  //         }
+  //     ],
+  //     "self_evaluation": "",
+  //     "social_links": [],
+  //     "source_id": "",
+  //     "url_list": [],
+  //     "use_ocr": 0,
+  //     "willing_location_list": [],
+  //     "willing_position_list": [],
+  //     "work_year": 2
+  // }
   
   
 }

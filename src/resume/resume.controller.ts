@@ -1,7 +1,6 @@
 import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ResumeService } from './resume.service';
-import { CreateResumeDto } from './dto/create-resume.dto';
 import { Body } from '@nestjs/common'; // 确保导入 Body 装饰器
 
 @Controller('resume')
@@ -23,8 +22,7 @@ export class ResumeController {
   }))
   async uploadResume(
     @UploadedFile() file: Express.Multer.File,
-    @Body() createResumeDto: CreateResumeDto
   ) {
-    return this.resumeService.create(createResumeDto, file);
+    return this.resumeService.processResume(file);
   }
 }
