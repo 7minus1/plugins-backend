@@ -3,7 +3,8 @@ import { createReadStream } from 'fs';
 const pdf = require('pdf-parse');
 import { createWorker } from 'tesseract.js';
 // import { FeishuService } from '../feishu/feishu.service';
-import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
+// import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
+import { TencentCloudService } from 'src/tencent-cloud/tencent-cloud.service';
 import { CozeApiService } from '../coze-api/coze-api.service';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { ResumeParserDto } from './dto/resume.dto';
@@ -14,7 +15,8 @@ import { console } from 'inspector';
 export class ResumeService {
   constructor(
     private readonly feishuService: FeishuService,
-    private readonly cloudStorage: CloudStorageService,
+    // private readonly cloudStorage: CloudStorageService,
+    private readonly cloudStorage: TencentCloudService,
     private readonly cozeApi: CozeApiService
   ) {
 
@@ -23,23 +25,122 @@ export class ResumeService {
   async create(createResumeDto: CreateResumeDto, file: Express.Multer.File) {
     // TODO: filename命名，要唯一性，防止覆盖
     // 重新命名文件
+    console.log("file", file);
     const fileExtension = file.originalname.split('.').pop(); // 获取文件扩展名
     const newFileName = `${Date.now()}.${fileExtension}`; // 生成新的文件名
+    
+    console.log("newFileName", newFileName);
     const fileInfo = await this.cloudStorage.uploadFile(
       // file.originalname,
       newFileName,
       file.buffer
     );
-    const fileUrl = fileInfo.url;   // http://bucket4resume.oss-cn-wulanchabu.aliyuncs.com/resume.pdf
     const fileName = fileInfo.name;
-
-    console.log("fileUrl", fileUrl);
-    console.log("fileName", fileName);
-
-    // const fileUrl = "http://bucket4resume.oss-cn-wulanchabu.aliyuncs.com/resume.pdf";
-    // const fileName = "resume.pdf";
+    const fileUrl = fileInfo.url;   // http://bucket4resume.oss-cn-wulanchabu.aliyuncs.com/resume.pdf
 
     const parseResult = await this.cozeApi.executeResumeParser(fileName, fileUrl);
+
+    // 建表
+    // const create_res = await this.feishuService.createBitable();
+    // console.log(create_res);
+    // const newTableId = create_res.data.table_id;
+
+    const parsedResume: ResumeParserDto = {
+      name: parseResult.name,
+      mobile: parseResult.mobile,
+      gender: parseResult.gender ?? -1,
+      email: parseResult.email,
+      work_year: parseResult.work_year ?? 0,
+      home_location: parseResult.home_location,
+      self_evaluation: parseResult.self_evaluation,
+      willing_location_list: parseResult.willing_location_list,
+      willing_position_list: parseResult.willing_position_list,
+      social_links: parseResult.social_links,
+      date_of_birth: parseResult.date_of_birth,
+      current_location: parseResult.current_location,
+      new_content: parseResult.new_content,
+      award_list: parseResult.award_list.map((award: any) => ({ award: award.award, date: award.date, description: award.description })),
+      education_list: parseResult.education_list.map((education: any) => ({ school: education.school, major: education.major, degree: education.degree, start_date: education.start_date, end_date: education.end_date, qualification: education.qualification })),
+      career_list: parseResult.career_list.map((career: any) => ({ type_str: career.type_str, company: career.company, title: career.title, start_date: career.start_date, end_date: career.end_date, job_description: career.job_description })),
+      language_list: parseResult.language_list.map((language: any) => ({ language: language.language, level: language.level, description: language.description })),
+      certificate_list: parseResult.certificate_list.map((certificate: any) => ({ name: certificate.name, desc: certificate.desc })),
+      competition_list: parseResult.competition_list.map((competition: any) => ({ name: competition.name, desc: competition.desc })),
+      project_list: parseResult.project_list.map((project: any) => ({ name: project.name, title: project.title, description: project.description, start_date: project.start_date, end_date: project.end_date })),
+    };
+
+
+    const feishuResponse = await this.feishuService.addBitableRecord(
+      process.env.FEISHU_APP_TOKEN,
+      process.env.FEISHU_TABLE_ID,
+      {
+        fields: {
+          name: parsedResume.name || '',
+          mobile: parsedResume.mobile,
+          email: parsedResume.email,
+          gender: parsedResume.gender.toString() || '-1',
+          work_year: parsedResume.work_year?.toString() || '0',
+          home_location: parsedResume.home_location,
+          self_evaluation: parsedResume.self_evaluation,
+          willing_location_list: JSON.stringify(parsedResume.willing_location_list),
+          willing_position_list: JSON.stringify(parsedResume.willing_position_list),
+          social_links: JSON.stringify(parsedResume.social_links),
+          date_of_birth: parsedResume.date_of_birth,
+          current_location: parsedResume.current_location,
+          new_content: parsedResume.new_content,
+          award_list: JSON.stringify(parsedResume.award_list),
+          language_list: JSON.stringify(parsedResume.language_list),
+          certificate_list: JSON.stringify(parsedResume.certificate_list),
+          competition_list: JSON.stringify(parsedResume.competition_list),
+          career_list: JSON.stringify(parsedResume.career_list),
+          education_list: JSON.stringify(parsedResume.education_list),
+          project_list: JSON.stringify(parsedResume.project_list),
+          file_url: fileUrl
+        }
+      }
+    );
+    return {
+      ...feishuResponse,
+    };
+  }
+
+  async processResume2(file: Express.Multer.File) {
+    const fileUrl = await this.cloudStorage.uploadFile(
+      file.originalname,
+      file.buffer
+    );
+    
+    // const result = await this.cozeApi.executeResumeParser(
+    //   file.originalname,
+    //   fileUrl
+    // );
+    
+    // await this.feishuService.createRecord(
+    //   process.env.FEISHU_APP_TOKEN,
+    //   process.env.FEISHU_TABLE_ID,
+    //   result
+    // );
+    
+    // return result;
+    return null;
+  }
+
+  async processResume(file: Express.Multer.File) {
+    const fileInfo = await this.cloudStorage.uploadFile(
+      file.originalname,
+      file.buffer
+    );
+    // const fileUrl = fileInfo.url;
+    // const fileName = fileInfo.name;
+    
+    // 调用 Coze API 解析简历
+    // const parseResult = await this.cozeApi.executeResumeParser(fileName, fileUrl);
+
+
+    // if (feishuResponse.error) {
+    //   throw new Error(`飞书表格记录创建失败: ${feishuResponse.error}`);
+    // }
+
+
     // 返回的parseResult示例
     // const parseResult = {
     //     "award_list": [],
@@ -133,122 +234,25 @@ export class ResumeService {
     //     "work_year": 2
     // }
 
-    // const create_res = await this.feishuService.createBitable();
-    // console.log(create_res);
-    // const newTableId = create_res.data.table_id;
-    const parsedResume: ResumeParserDto = {
-      name: parseResult.name,
-      mobile: parseResult.mobile,
-      gender: parseResult.gender ?? -1,
-      email: parseResult.email,
-      work_year: parseResult.work_year ?? 0,
-      home_location: parseResult.home_location,
-      self_evaluation: parseResult.self_evaluation,
-      willing_location_list: parseResult.willing_location_list,
-      willing_position_list: parseResult.willing_position_list,
-      social_links: parseResult.social_links,
-      date_of_birth: parseResult.date_of_birth,
-      current_location: parseResult.current_location,
-      new_content: parseResult.new_content,
-      award_list: parseResult.award_list.map((award: any) => ({ award: award.award, date: award.date, description: award.description })),
-      education_list: parseResult.education_list.map((education: any) => ({ school: education.school, major: education.major, degree: education.degree, start_date: education.start_date, end_date: education.end_date, qualification: education.qualification })),
-      career_list: parseResult.career_list.map((career: any) => ({ type_str: career.type_str, company: career.company, title: career.title, start_date: career.start_date, end_date: career.end_date, job_description: career.job_description })),
-      language_list: parseResult.language_list.map((language: any) => ({ language: language.language, level: language.level, description: language.description })),
-      certificate_list: parseResult.certificate_list.map((certificate: any) => ({ name: certificate.name, desc: certificate.desc })),
-      competition_list: parseResult.competition_list.map((competition: any) => ({ name: competition.name, desc: competition.desc })),
-      project_list: parseResult.project_list.map((project: any) => ({ name: project.name, title: project.title, description: project.description, start_date: project.start_date, end_date: project.end_date })),
-    };
-
-
-    const feishuResponse = await this.feishuService.addBitableRecord(
-      process.env.FEISHU_APP_TOKEN,
-      process.env.FEISHU_TABLE_ID,
-      {
-        fields: {
-          name: parsedResume.name || '',
-          mobile: parsedResume.mobile,
-          email: parsedResume.email,
-          gender: parsedResume.gender.toString() || '-1',
-          work_year: parsedResume.work_year?.toString() || '0',
-          home_location: parsedResume.home_location,
-          self_evaluation: parsedResume.self_evaluation,
-          willing_location_list: JSON.stringify(parsedResume.willing_location_list),
-          willing_position_list: JSON.stringify(parsedResume.willing_position_list),
-          social_links: JSON.stringify(parsedResume.social_links),
-          date_of_birth: parsedResume.date_of_birth,
-          current_location: parsedResume.current_location,
-          new_content: parsedResume.new_content,
-          award_list: JSON.stringify(parsedResume.award_list),
-          language_list: JSON.stringify(parsedResume.language_list),
-          certificate_list: JSON.stringify(parsedResume.certificate_list),
-          competition_list: JSON.stringify(parsedResume.competition_list),
-          career_list: JSON.stringify(parsedResume.career_list),
-          education_list: JSON.stringify(parsedResume.education_list),
-          project_list: JSON.stringify(parsedResume.project_list),
-          file_url: fileUrl
-        }
-      }
-    );
     return {
-      ...feishuResponse,
-    };
-  }
-
-  async processResume2(file: Express.Multer.File) {
-    const fileUrl = await this.cloudStorage.uploadFile(
-      file.originalname,
-      file.buffer
-    );
-    
-    // const result = await this.cozeApi.executeResumeParser(
-    //   file.originalname,
-    //   fileUrl
-    // );
-    
-    // await this.feishuService.createRecord(
-    //   process.env.FEISHU_APP_TOKEN,
-    //   process.env.FEISHU_TABLE_ID,
-    //   result
-    // );
-    
-    // return result;
-    return null;
-  }
-
-  async processResume(file: Express.Multer.File) {
-    const fileInfo = await this.cloudStorage.uploadFile(
-      file.originalname,
-      file.buffer
-    );
-    const fileUrl = fileInfo.url;
-    const fileName = fileInfo.name;
-    const parseResult = await this.cozeApi.executeResumeParser(fileName, fileUrl);
-
-
-    // if (feishuResponse.error) {
-    //   throw new Error(`飞书表格记录创建失败: ${feishuResponse.error}`);
-    // }
-
-
-
-    return {
-      ...parseResult,
-      career_list: parseResult.career_list.map(item => ({
-        companyName: item.company,
-        position: item.title,
-        jobDescription: item.job_description,
-        startDate: item.start_date,
-        endDate: item.end_date
-      })),
-      education_list: parseResult.education_list.map(item => ({
-        schoolName: item.school,
-        major: item.major,
-        degree: item.degree,
-        startDate: item.start_date,
-        endDate: item.end_date
-      })),
-      fileUrl,
-      fileName,
+      fileInfo
+      // ...parseResult,
+      // career_list: parseResult.career_list.map(item => ({
+      //   companyName: item.company,
+      //   position: item.title,
+      //   jobDescription: item.job_description,
+      //   startDate: item.start_date,
+      //   endDate: item.end_date
+      // })),
+      // education_list: parseResult.education_list.map(item => ({
+      //   schoolName: item.school,
+      //   major: item.major,
+      //   degree: item.degree,
+      //   startDate: item.start_date,
+      //   endDate: item.end_date
+      // })),
+      // fileUrl,
+      // fileName,
       // feishuRecordId: feishuResponse.recordId
     };
   }

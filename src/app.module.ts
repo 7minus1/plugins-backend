@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { ResumeModule } from './resume/resume.module';
 import { Resume } from './resume/entities/resume.entity';
 import { CloudStorageModule } from './cloud-storage/cloud-storage.module';
+import { TencentCloudModule } from './tencent-cloud/tencent-cloud.module';
 import { FeishuModule } from './feishu/feishu.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { FeishuModule } from './feishu/feishu.module';
     }),
     ResumeModule,
     CloudStorageModule,
+    TencentCloudModule,
     FeishuModule,
   ],
   controllers: [AppController],
