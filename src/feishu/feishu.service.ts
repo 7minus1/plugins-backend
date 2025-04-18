@@ -22,7 +22,7 @@ const FIELD_NAME_MAP = {
   social_links: '社交链接',
   date_of_birth: '出生日期',
   current_location: '当前所在地',
-  new_content: '最新动态',
+  new_content: '识别内容',
   award_list: '获奖经历',
   education_list: '教育经历',
   career_list: '工作经历',
@@ -43,7 +43,7 @@ const formatDate = (dateStr: string) => {
 @Injectable()
 export class FeishuService {
   private client: lark.Client;
-  private appToken: string; // 应用的token，用于创建表格
+  // private appToken: string; // 应用的token，用于创建表格
   // private tableId: string; // 表格的ID，用于新增记录
   
 
@@ -53,26 +53,26 @@ export class FeishuService {
       appSecret: this.configService.get('FEISHU_APP_SECRET'),
       domain: 'https://open.feishu.cn'
     });
-    this.appToken = this.configService.get('FEISHU_APP_TOKEN'); // 从环境变量中获取应用的token
+    // this.appToken = this.configService.get('FEISHU_APP_TOKEN'); // 从环境变量中获取应用的token
     // this.tableId = this.configService.get('FEISHU_TABLE_ID'); // 从环境变量中获取表格的ID
   }
 
   // 创建多维表格
-  async createBitable() {
+  async createBitable(appToken: string, bitableToken: string) {
     return this.client.bitable.appTable.create({
       path: {
-        app_token: this.appToken,
+        app_token: appToken,
       },
       data: {
         table: {
-          name: '简历表2',   // 新增的数据表名称
+          name: '简历表0',   // 新增的数据表名称
           fields: [
             // 调用转换函数生成字段配置
             ...this.convertToBitableFields()
           ],
         }
       }
-    }, lark.withTenantToken(""));
+    }, lark.withTenantToken(bitableToken));
   }
 
   /**
@@ -148,7 +148,7 @@ export class FeishuService {
     return fieldsConfig;
   }
   
-  async uploadFile(file: Express.Multer.File, fileName: string) {
+  async uploadFile(file: Express.Multer.File, fileName: string, appToken: string, bitableToken: string) {
     // 将 buffer 写入临时文件并创建可读流
     const tempFilePath = join(tmpdir(), fileName);
     writeFileSync(tempFilePath, file.buffer);
@@ -158,12 +158,12 @@ export class FeishuService {
       data: {
         file_name: fileName,
         parent_type: 'bitable_file',
-        parent_node: this.appToken,
+        parent_node: appToken,
         size: file.size,
         file: stream
       },
     },
-    lark.withTenantToken(""));
+    lark.withTenantToken(bitableToken));
 
     return fileToken;  // 一串字符串 ICTLbSvFhoWB3TxwpgicgfE4ned
   }
@@ -171,6 +171,7 @@ export class FeishuService {
   async addBitableRecord(
     appToken: string,
     tableId: string,
+    bitableToken: string,
     record: CreateBitableRecordRequest
   ): Promise<CreateBitableRecordResponse> {
     // 将英文字段名转换为中文字段名
@@ -289,7 +290,7 @@ export class FeishuService {
       data: {
         fields: chineseFields
       }
-    }, lark.withTenantToken(""));
+    }, lark.withTenantToken(bitableToken));
 
     console.log("response", response);
 
@@ -297,5 +298,16 @@ export class FeishuService {
       recordId: response.data.record?.record_id,
       error: response.code !== 0 ? response.msg : undefined
     };
+  }
+
+  async createNewTable(bitableUrl: string, bitableToken: string) {
+    // 从bitableUrl中解析appToken
+    const appToken = bitableUrl.split('?')[0].split('/').pop();
+    
+    // 建表
+    const create_res = await this.createBitable(appToken, bitableToken);
+    console.log(create_res);
+    const newTableId = create_res.data.table_id;
+    return newTableId;
   }
 }

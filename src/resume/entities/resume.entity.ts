@@ -17,7 +17,7 @@ export class Resume {
   @Column()
   phone: string;
 
-  @Column('jsonb')
+  @Column('json')
   education: {
     school: string;
     degree: string;

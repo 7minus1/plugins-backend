@@ -1,13 +1,14 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseInterceptors, UseGuards, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ResumeService } from './resume.service';
-import { Body } from '@nestjs/common'; // 确保导入 Body 装饰器
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('resume')
 export class ResumeController {
   constructor(private readonly resumeService: ResumeService) {}
 
   @Post('upload')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', {
     limits: {
       fileSize: 1024 * 1024 * 5 // 5MB限制
@@ -22,7 +23,8 @@ export class ResumeController {
   }))
   async uploadResume(
     @UploadedFile() file: Express.Multer.File,
+    @Request() req
   ) {
-    return this.resumeService.processResume(file);
+    return this.resumeService.processResume(file, req.user.userId);
   }
 }

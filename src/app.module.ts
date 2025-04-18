@@ -8,21 +8,27 @@ import { Resume } from './resume/entities/resume.entity';
 import { CloudStorageModule } from './cloud-storage/cloud-storage.module';
 import { TencentCloudModule } from './tencent-cloud/tencent-cloud.module';
 import { FeishuModule } from './feishu/feishu.module';
+import { UsersModule } from './users/users.module';
+import { User } from './users/entities/user.entity';
+import { UserBitable } from './users/entities/user-bitable.entity';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get('DB_HOST'),
-        port: config.get('DB_PORT'),
-        username: config.get('DB_USERNAME'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_DATABASE'),
-        entities: [Resume],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_DATABASE'),
+        entities: [Resume, User, UserBitable],
         synchronize: true,
+        autoLoadEntities: true,
       }),
       inject: [ConfigService],
     }),
@@ -30,6 +36,7 @@ import { FeishuModule } from './feishu/feishu.module';
     CloudStorageModule,
     TencentCloudModule,
     FeishuModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

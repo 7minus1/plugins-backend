@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ResumeController } from './resume.controller';
 import { ResumeService } from './resume.service';
@@ -9,6 +9,7 @@ import { FeishuModule } from '../feishu/feishu.module';
 import { TencentCloudModule } from '../tencent-cloud/tencent-cloud.module';
 import { CozeApiModule } from '../coze-api/coze-api.module';
 import { FeishuService } from '../feishu/feishu.service';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -22,8 +23,10 @@ import { FeishuService } from '../feishu/feishu.service';
     // CloudStorageModule,
     TencentCloudModule,
     CozeApiModule,
+    forwardRef(() => UsersModule),
   ],
   controllers: [ResumeController],
-  providers: [ResumeService, FeishuService]
+  providers: [ResumeService, FeishuService],
+  exports: [ResumeService]
 })
 export class ResumeModule {}
