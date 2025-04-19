@@ -17,6 +17,9 @@ importers:
       '@nestjs/axios':
         specifier: ^4.0.0
         version: 4.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(axios@1.8.4)(rxjs@7.8.2)
+      '@nestjs/cache-manager':
+        specifier: ^3.0.1
+        version: 3.0.1(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(cache-manager@6.4.2)(keyv@5.3.2)(rxjs@7.8.2)
       '@nestjs/common':
         specifier: ^10.0.0
         version: 10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -40,10 +43,13 @@ importers:
         version: 11.1.1(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)
       '@nestjs/typeorm':
         specifier: ^11.0.0
-        version: 11.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.22(mysql2@3.14.0)(pg@8.14.1)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3)))
+        version: 11.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.22(mysql2@3.14.0)(pg@8.14.1)(redis@4.7.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3)))
       '@types/bcrypt':
         specifier: ^5.0.2
         version: 5.0.2
+      '@types/cache-manager':
+        specifier: ^4.0.6
+        version: 4.0.6
       '@types/multer':
         specifier: ^1.4.12
         version: 1.4.12
@@ -65,6 +71,9 @@ importers:
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1
+      cache-manager:
+        specifier: ^6.4.2
+        version: 6.4.2
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -98,18 +107,24 @@ importers:
       pg:
         specifier: ^8.14.1
         version: 8.14.1
+      redis:
+        specifier: ^4.7.0
+        version: 4.7.0
       reflect-metadata:
         specifier: ^0.2.0
         version: 0.2.2
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
+      tencentcloud-sdk-nodejs:
+        specifier: ^4.1.20
+        version: 4.1.20
       tesseract.js:
         specifier: ^4.0.2
         version: 4.0.2(eslint@8.57.1)
       typeorm:
         specifier: ^0.3.22
-        version: 0.3.22(mysql2@3.14.0)(pg@8.14.1)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3))
+        version: 0.3.22(mysql2@3.14.0)(pg@8.14.1)(redis@4.7.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3))
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.0.0
@@ -501,6 +516,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==, tarball: https://registry.npmmirror.com/@jridgewell/trace-mapping/-/trace-mapping-0.3.9.tgz}
 
+  '@keyv/serialize@1.0.3':
+    resolution: {integrity: sha512-qnEovoOp5Np2JDGonIDL6Ayihw0RhnRh6vxPuHo4RDn1UOzwEo4AeIfpL6UGIrsceWrCMiVPgwRjbHu4vYFc3g==, tarball: https://registry.npmmirror.com/@keyv/serialize/-/serialize-1.0.3.tgz}
+
   '@lark-base-open/node-sdk@1.0.1':
     resolution: {integrity: sha512-taoQs2SYmUAHto/YZkWXMTJ41/ZUfVEcgjCJzUj14uEGe/ZWW2cjzxF0vKeu6MZUXaFV7EAeAw5s7mynTNQW0w==, tarball: https://registry.npmmirror.com/@lark-base-open/node-sdk/-/node-sdk-1.0.1.tgz}
 
@@ -528,6 +546,15 @@ packages:
       '@nestjs/common': ^10.0.0 || ^11.0.0
       axios: ^1.3.1
       rxjs: ^7.0.0
+
+  '@nestjs/cache-manager@3.0.1':
+    resolution: {integrity: sha512-4UxTnR0fsmKL5YDalU2eLFVnL+OBebWUpX+hEduKGncrVKH4PPNoiRn1kXyOCjmzb0UvWgqubpssNouc8e0MCw==, tarball: https://registry.npmmirror.com/@nestjs/cache-manager/-/cache-manager-3.0.1.tgz}
+    peerDependencies:
+      '@nestjs/common': ^9.0.0 || ^10.0.0 || ^11.0.0
+      '@nestjs/core': ^9.0.0 || ^10.0.0 || ^11.0.0
+      cache-manager: '>=6'
+      keyv: '>=5'
+      rxjs: ^7.8.1
 
   '@nestjs/cli@10.4.9':
     resolution: {integrity: sha512-s8qYd97bggqeK7Op3iD49X2MpFtW4LVNLAwXFkfbRxKME6IYT7X0muNTJ2+QfI8hpbNx9isWkrLWIp+g5FOhiA==, tarball: https://registry.npmmirror.com/@nestjs/cli/-/cli-10.4.9.tgz}
@@ -707,6 +734,35 @@ packages:
   '@protobufjs/utf8@1.1.0':
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==, tarball: https://registry.npmmirror.com/@protobufjs/utf8/-/utf8-1.1.0.tgz}
 
+  '@redis/bloom@1.2.0':
+    resolution: {integrity: sha512-HG2DFjYKbpNmVXsa0keLHp/3leGJz1mjh09f2RLGGLQZzSHpkmZWuwJbAvo3QcRY8p80m5+ZdXZdYOSBLlp7Cg==, tarball: https://registry.npmmirror.com/@redis/bloom/-/bloom-1.2.0.tgz}
+    peerDependencies:
+      '@redis/client': ^1.0.0
+
+  '@redis/client@1.6.0':
+    resolution: {integrity: sha512-aR0uffYI700OEEH4gYnitAnv3vzVGXCFvYfdpu/CJKvk4pHfLPEy/JSZyrpQ+15WhXe1yJRXLtfQ84s4mEXnPg==, tarball: https://registry.npmmirror.com/@redis/client/-/client-1.6.0.tgz}
+    engines: {node: '>=14'}
+
+  '@redis/graph@1.1.1':
+    resolution: {integrity: sha512-FEMTcTHZozZciLRl6GiiIB4zGm5z5F3F6a6FZCyrfxdKOhFlGkiAqlexWMBzCi4DcRoyiOsuLfW+cjlGWyExOw==, tarball: https://registry.npmmirror.com/@redis/graph/-/graph-1.1.1.tgz}
+    peerDependencies:
+      '@redis/client': ^1.0.0
+
+  '@redis/json@1.0.7':
+    resolution: {integrity: sha512-6UyXfjVaTBTJtKNG4/9Z8PSpKE6XgSyEb8iwaqDcy+uKrd/DGYHTWkUdnQDyzm727V7p21WUMhsqz5oy65kPcQ==, tarball: https://registry.npmmirror.com/@redis/json/-/json-1.0.7.tgz}
+    peerDependencies:
+      '@redis/client': ^1.0.0
+
+  '@redis/search@1.2.0':
+    resolution: {integrity: sha512-tYoDBbtqOVigEDMAcTGsRlMycIIjwMCgD8eR2t0NANeQmgK/lvxNAvYyb6bZDD4frHRhIHkJu2TBRvB0ERkOmw==, tarball: https://registry.npmmirror.com/@redis/search/-/search-1.2.0.tgz}
+    peerDependencies:
+      '@redis/client': ^1.0.0
+
+  '@redis/time-series@1.1.0':
+    resolution: {integrity: sha512-c1Q99M5ljsIuc4YdaCwfUEXsofakb9c8+Zse2qxTadu8TalLXuAESzLvFAvNVbkmSlvlzIQOLpBCmWI9wTOt+g==, tarball: https://registry.npmmirror.com/@redis/time-series/-/time-series-1.1.0.tgz}
+    peerDependencies:
+      '@redis/client': ^1.0.0
+
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==, tarball: https://registry.npmmirror.com/@scarf/scarf/-/scarf-1.4.0.tgz}
 
@@ -751,6 +807,9 @@ packages:
 
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==, tarball: https://registry.npmmirror.com/@types/body-parser/-/body-parser-1.19.5.tgz}
+
+  '@types/cache-manager@4.0.6':
+    resolution: {integrity: sha512-8qL93MF05/xrzFm/LSPtzNEOE1eQF3VwGHAcQEylgp5hDSTe41jtFwbSYAPfyYcVa28y1vYSjIt0c1fLLUiC/Q==, tarball: https://registry.npmmirror.com/@types/cache-manager/-/cache-manager-4.0.6.tgz}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==, tarball: https://registry.npmmirror.com/@types/connect/-/connect-3.4.38.tgz}
@@ -1183,6 +1242,9 @@ packages:
     resolution: {integrity: sha512-AGBHOG5hPYZ5Xl9KXzU5iKq9516yEmvCKDg3ecP5kX2aB6UqTeXZxk2ELnDgDm6BQSMlLt9rDB4LoSMx0rYwww==, tarball: https://registry.npmmirror.com/bcrypt/-/bcrypt-5.1.1.tgz}
     engines: {node: '>= 10.0.0'}
 
+  bignumber.js@9.2.1:
+    resolution: {integrity: sha512-+NzaKgOUvInq9TIUZ1+DRspzf/HApkCwD4btfuasFTdrfnOxqx853TgDpMolp+uv4RpRp7bPcEU2zKr9+fRmyw==, tarball: https://registry.npmmirror.com/bignumber.js/-/bignumber.js-9.2.1.tgz}
+
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==, tarball: https://registry.npmmirror.com/binary-extensions/-/binary-extensions-2.3.0.tgz}
     engines: {node: '>=8'}
@@ -1244,6 +1306,9 @@ packages:
   bytes@3.1.2:
     resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==, tarball: https://registry.npmmirror.com/bytes/-/bytes-3.1.2.tgz}
     engines: {node: '>= 0.8'}
+
+  cache-manager@6.4.2:
+    resolution: {integrity: sha512-oT0d1cGWZAlqEGDPjOfhmldTS767jT6kBT3KIdn7MX5OevlRVYqJT+LxRv5WY4xW9heJtYxeRRXaoKlEW+Biew==, tarball: https://registry.npmmirror.com/cache-manager/-/cache-manager-6.4.2.tgz}
 
   call-bind-apply-helpers@1.0.2:
     resolution: {integrity: sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==, tarball: https://registry.npmmirror.com/call-bind-apply-helpers/-/call-bind-apply-helpers-1.0.2.tgz}
@@ -1342,6 +1407,10 @@ packages:
   clone@1.0.4:
     resolution: {integrity: sha512-JQHZ2QMW6l3aH/j6xCqQThY/9OH4D/9ls34cgkUBiEeocRTU04tHfKPBsUK1PqZCUQM7GiA0IIXJSuXHI64Kbg==, tarball: https://registry.npmmirror.com/clone/-/clone-1.0.4.tgz}
     engines: {node: '>=0.8'}
+
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==, tarball: https://registry.npmmirror.com/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz}
+    engines: {node: '>=0.10.0'}
 
   co@4.6.0:
     resolution: {integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==, tarball: https://registry.npmmirror.com/co/-/co-4.6.0.tgz}
@@ -1891,6 +1960,10 @@ packages:
     resolution: {integrity: sha512-1lLKB2Mu3aGP1Q/2eCOx0fNbRMe7XdwktwOruhfqqd0rIJWwN4Dh+E3hrPSlDCXnSR7UtZ1N38rVXm+6+MEhJQ==, tarball: https://registry.npmmirror.com/form-data/-/form-data-2.3.3.tgz}
     engines: {node: '>= 0.12'}
 
+  form-data@3.0.3:
+    resolution: {integrity: sha512-q5YBMeWy6E2Un0nMGWMgI65MAKtaylxfNJGJxpGh45YDciZB4epbWpaAfImil6CPAPTYB4sh0URQNDRIZG5F2w==, tarball: https://registry.npmmirror.com/form-data/-/form-data-3.0.3.tgz}
+    engines: {node: '>= 6'}
+
   form-data@4.0.2:
     resolution: {integrity: sha512-hGfm/slu0ZabnNt4oaRZ6uREyfCj6P4fT/n6A1rGV+Z0VdGXjfOhVUpkn6qVQONHGIFwmveGXyDs75+nr6FM8w==, tarball: https://registry.npmmirror.com/form-data/-/form-data-4.0.2.tgz}
     engines: {node: '>= 6'}
@@ -1938,6 +2011,10 @@ packages:
 
   generate-function@2.3.1:
     resolution: {integrity: sha512-eeB5GfMNeevm/GRYq20ShmsaGcmI81kIX2K9XQx5miC8KdHaC6Jm0qQ8ZNeGOi7wYB8OsdxKs+Y2oVuTFuVwKQ==, tarball: https://registry.npmmirror.com/generate-function/-/generate-function-2.3.1.tgz}
+
+  generic-pool@3.9.0:
+    resolution: {integrity: sha512-hymDOu5B53XvN4QT9dBmZxPX4CWhBPPLguTZ9MMFeFa/Kg0xWVfylOVNlJji/E7yTZWFd/q9GO5TxDLq156D7g==, tarball: https://registry.npmmirror.com/generic-pool/-/generic-pool-3.9.0.tgz}
+    engines: {node: '>= 4'}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==, tarball: https://registry.npmmirror.com/gensync/-/gensync-1.0.0-beta.2.tgz}
@@ -2390,6 +2467,9 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  json-bigint@1.0.0:
+    resolution: {integrity: sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==, tarball: https://registry.npmmirror.com/json-bigint/-/json-bigint-1.0.0.tgz}
+
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==, tarball: https://registry.npmmirror.com/json-buffer/-/json-buffer-3.0.1.tgz}
 
@@ -2447,6 +2527,9 @@ packages:
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==, tarball: https://registry.npmmirror.com/keyv/-/keyv-4.5.4.tgz}
+
+  keyv@5.3.2:
+    resolution: {integrity: sha512-Lji2XRxqqa5Wg+CHLVfFKBImfJZ4pCSccu9eVWK6w4c2SDFLd8JAn1zqTuSFnsxb7ope6rMsnIHfp+eBbRBRZQ==, tarball: https://registry.npmmirror.com/keyv/-/keyv-5.3.2.tgz}
 
   kleur@3.0.3:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==, tarball: https://registry.npmmirror.com/kleur/-/kleur-3.0.3.tgz}
@@ -3077,6 +3160,9 @@ packages:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==, tarball: https://registry.npmmirror.com/readdirp/-/readdirp-3.6.0.tgz}
     engines: {node: '>=8.10.0'}
 
+  redis@4.7.0:
+    resolution: {integrity: sha512-zvmkHEAdGMn+hMRXuMBtu4Vo5P6rHQjLoHftu+lBqq8ZTA3RCVC/WzD790bkKKiNFp7d5/9PcSD19fJyyRvOdQ==, tarball: https://registry.npmmirror.com/redis/-/redis-4.7.0.tgz}
+
   reflect-metadata@0.2.2:
     resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==, tarball: https://registry.npmmirror.com/reflect-metadata/-/reflect-metadata-0.2.2.tgz}
 
@@ -3398,6 +3484,10 @@ packages:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==, tarball: https://registry.npmmirror.com/tar/-/tar-6.2.1.tgz}
     engines: {node: '>=10'}
 
+  tencentcloud-sdk-nodejs@4.1.20:
+    resolution: {integrity: sha512-kE8Xjczpm2pQHGplQVhqIjgtm4PAn1n3FjogbpectmvJ2TYkdUeatWOMKEfSQFrUZg4aaqsj/AZ52/g6J0XCPQ==, tarball: https://registry.npmmirror.com/tencentcloud-sdk-nodejs/-/tencentcloud-sdk-nodejs-4.1.20.tgz}
+    engines: {node: '>=10'}
+
   terser-webpack-plugin@5.3.14:
     resolution: {integrity: sha512-vkZjpUjb6OMS7dhV+tILUW6BhpDR7P2L/aQSAv+Uwk+m8KATX9EccViHTJR2qDtACKPIYndLGCyl3FMo+r2LMw==, tarball: https://registry.npmmirror.com/terser-webpack-plugin/-/terser-webpack-plugin-5.3.14.tgz}
     engines: {node: '>= 10.13.0'}
@@ -3529,6 +3619,9 @@ packages:
   tsconfig-paths@4.2.0:
     resolution: {integrity: sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==, tarball: https://registry.npmmirror.com/tsconfig-paths/-/tsconfig-paths-4.2.0.tgz}
     engines: {node: '>=6'}
+
+  tslib@1.13.0:
+    resolution: {integrity: sha512-i/6DQjL8Xf3be4K/E6Wgpekn5Qasl1usyw++dAA35Ue5orEn65VIxOA+YvNNl9HV3qv70T7CNwjODHZrLwvd1Q==, tarball: https://registry.npmmirror.com/tslib/-/tslib-1.13.0.tgz}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==, tarball: https://registry.npmmirror.com/tslib/-/tslib-2.8.1.tgz}
@@ -3690,6 +3783,10 @@ packages:
   uuid@3.4.0:
     resolution: {integrity: sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==, tarball: https://registry.npmmirror.com/uuid/-/uuid-3.4.0.tgz}
     deprecated: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+    hasBin: true
+
+  uuid@9.0.1:
+    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==, tarball: https://registry.npmmirror.com/uuid/-/uuid-9.0.1.tgz}
     hasBin: true
 
   v8-compile-cache-lib@3.0.1:
@@ -4312,6 +4409,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
+  '@keyv/serialize@1.0.3':
+    dependencies:
+      buffer: 6.0.3
+
   '@lark-base-open/node-sdk@1.0.1':
     dependencies:
       '@types/node': 20.17.30
@@ -4366,6 +4467,14 @@ snapshots:
     dependencies:
       '@nestjs/common': 10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       axios: 1.8.4
+      rxjs: 7.8.2
+
+  '@nestjs/cache-manager@3.0.1(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(cache-manager@6.4.2)(keyv@5.3.2)(rxjs@7.8.2)':
+    dependencies:
+      '@nestjs/common': 10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core': 10.4.15(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@10.4.15)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      cache-manager: 6.4.2
+      keyv: 5.3.2
       rxjs: 7.8.2
 
   '@nestjs/cli@10.4.9':
@@ -4505,13 +4614,13 @@ snapshots:
     optionalDependencies:
       '@nestjs/platform-express': 10.4.15(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)
 
-  '@nestjs/typeorm@11.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.22(mysql2@3.14.0)(pg@8.14.1)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3)))':
+  '@nestjs/typeorm@11.0.0(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.15)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.22(mysql2@3.14.0)(pg@8.14.1)(redis@4.7.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3)))':
     dependencies:
       '@nestjs/common': 10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core': 10.4.15(@nestjs/common@10.4.15(class-transformer@0.5.1)(class-validator@0.14.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@10.4.15)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
-      typeorm: 0.3.22(mysql2@3.14.0)(pg@8.14.1)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3))
+      typeorm: 0.3.22(mysql2@3.14.0)(pg@8.14.1)(redis@4.7.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3))
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -4560,6 +4669,32 @@ snapshots:
   '@protobufjs/pool@1.1.0': {}
 
   '@protobufjs/utf8@1.1.0': {}
+
+  '@redis/bloom@1.2.0(@redis/client@1.6.0)':
+    dependencies:
+      '@redis/client': 1.6.0
+
+  '@redis/client@1.6.0':
+    dependencies:
+      cluster-key-slot: 1.1.2
+      generic-pool: 3.9.0
+      yallist: 4.0.0
+
+  '@redis/graph@1.1.1(@redis/client@1.6.0)':
+    dependencies:
+      '@redis/client': 1.6.0
+
+  '@redis/json@1.0.7(@redis/client@1.6.0)':
+    dependencies:
+      '@redis/client': 1.6.0
+
+  '@redis/search@1.2.0(@redis/client@1.6.0)':
+    dependencies:
+      '@redis/client': 1.6.0
+
+  '@redis/time-series@1.1.0(@redis/client@1.6.0)':
+    dependencies:
+      '@redis/client': 1.6.0
 
   '@scarf/scarf@1.4.0': {}
 
@@ -4612,6 +4747,8 @@ snapshots:
     dependencies:
       '@types/connect': 3.4.38
       '@types/node': 20.17.30
+
+  '@types/cache-manager@4.0.6': {}
 
   '@types/connect@3.4.38':
     dependencies:
@@ -5188,6 +5325,8 @@ snapshots:
       - encoding
       - supports-color
 
+  bignumber.js@9.2.1: {}
+
   binary-extensions@2.3.0: {}
 
   bl@4.1.0:
@@ -5266,6 +5405,10 @@ snapshots:
       streamsearch: 1.1.0
 
   bytes@3.1.2: {}
+
+  cache-manager@6.4.2:
+    dependencies:
+      keyv: 5.3.2
 
   call-bind-apply-helpers@1.0.2:
     dependencies:
@@ -5356,6 +5499,8 @@ snapshots:
       wrap-ansi: 7.0.0
 
   clone@1.0.4: {}
+
+  cluster-key-slot@1.1.2: {}
 
   co@4.6.0: {}
 
@@ -5927,6 +6072,13 @@ snapshots:
       combined-stream: 1.0.8
       mime-types: 2.1.35
 
+  form-data@3.0.3:
+    dependencies:
+      asynckit: 0.4.0
+      combined-stream: 1.0.8
+      es-set-tostringtag: 2.1.0
+      mime-types: 2.1.35
+
   form-data@4.0.2:
     dependencies:
       asynckit: 0.4.0
@@ -5985,6 +6137,8 @@ snapshots:
   generate-function@2.3.1:
     dependencies:
       is-property: 1.0.2
+
+  generic-pool@3.9.0: {}
 
   gensync@1.0.0-beta.2: {}
 
@@ -6631,6 +6785,10 @@ snapshots:
 
   jsesc@3.1.0: {}
 
+  json-bigint@1.0.0:
+    dependencies:
+      bignumber.js: 9.2.1
+
   json-buffer@3.0.1: {}
 
   json-parse-even-better-errors@2.3.1: {}
@@ -6695,6 +6853,10 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  keyv@5.3.2:
+    dependencies:
+      '@keyv/serialize': 1.0.3
 
   kleur@3.0.3: {}
 
@@ -7262,6 +7424,15 @@ snapshots:
     dependencies:
       picomatch: 2.3.1
 
+  redis@4.7.0:
+    dependencies:
+      '@redis/bloom': 1.2.0(@redis/client@1.6.0)
+      '@redis/client': 1.6.0
+      '@redis/graph': 1.1.1(@redis/client@1.6.0)
+      '@redis/json': 1.0.7(@redis/client@1.6.0)
+      '@redis/search': 1.2.0(@redis/client@1.6.0)
+      '@redis/time-series': 1.1.0(@redis/client@1.6.0)
+
   reflect-metadata@0.2.2: {}
 
   regenerator-runtime@0.13.11: {}
@@ -7614,6 +7785,20 @@ snapshots:
       mkdirp: 1.0.4
       yallist: 4.0.0
 
+  tencentcloud-sdk-nodejs@4.1.20:
+    dependencies:
+      form-data: 3.0.3
+      get-stream: 6.0.1
+      https-proxy-agent: 5.0.1
+      is-stream: 2.0.1
+      json-bigint: 1.0.0
+      node-fetch: 2.7.0
+      tslib: 1.13.0
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
   terser-webpack-plugin@5.3.14(webpack@5.97.1):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.25
@@ -7758,6 +7943,8 @@ snapshots:
       minimist: 1.2.8
       strip-bom: 3.0.0
 
+  tslib@1.13.0: {}
+
   tslib@2.8.1: {}
 
   tunnel-agent@0.6.0:
@@ -7785,7 +7972,7 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typeorm@0.3.22(mysql2@3.14.0)(pg@8.14.1)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3)):
+  typeorm@0.3.22(mysql2@3.14.0)(pg@8.14.1)(redis@4.7.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.17.30)(typescript@5.8.3)):
     dependencies:
       '@sqltools/formatter': 1.2.5
       ansis: 3.17.0
@@ -7804,6 +7991,7 @@ snapshots:
     optionalDependencies:
       mysql2: 3.14.0
       pg: 8.14.1
+      redis: 4.7.0
       ts-node: 10.9.2(@types/node@20.17.30)(typescript@5.8.3)
     transitivePeerDependencies:
       - supports-color
@@ -7866,6 +8054,8 @@ snapshots:
   uuid@11.1.0: {}
 
   uuid@3.4.0: {}
+
+  uuid@9.0.1: {}
 
   v8-compile-cache-lib@3.0.1: {}
 

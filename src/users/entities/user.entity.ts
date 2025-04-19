@@ -9,10 +9,7 @@ export class User {
   username: string;
 
   @Column({ unique: true })
-  email: string;
-
-  @Column()
-  password: string;
+  phone: string;
 
   @Column({ default: true })
   isActive: boolean;
