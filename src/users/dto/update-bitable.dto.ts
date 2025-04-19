@@ -1,11 +1,14 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsUrl, IsOptional } from 'class-validator';
 
 export class UpdateBitableDto {
   @IsString()
-  @IsNotEmpty()
+  @IsUrl()
   bitableUrl: string;
 
   @IsString()
-  @IsNotEmpty()
   bitableToken: string;
+
+  @IsString()
+  @IsOptional()
+  tableId?: string;
 } 
