@@ -1,7 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { createReadStream } from 'fs';
-const pdf = require('pdf-parse');
-import { createWorker } from 'tesseract.js';
 // import { FeishuService } from '../feishu/feishu.service';
 // import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
 import { TencentCloudService } from 'src/tencent-cloud/tencent-cloud.service';
@@ -19,6 +17,7 @@ export class ResumeService {
     // private readonly cloudStorage: CloudStorageService,
     private readonly cloudStorage: TencentCloudService,
     private readonly cozeApi: CozeApiService,
+    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService
   ) {
 
@@ -118,11 +117,12 @@ export class ResumeService {
   async createNewTable(userId: number) {
     // 获取用户的bitable信息
     const userBitable = await this.usersService.getBitableInfo(userId);
+    console.log(userBitable);
 
     if (!userBitable) {
       throw new Error('请先配置多维表格信息');
     }
-    
+        
     const newTableId = await this.feishuService.createNewTable(userBitable.bitableUrl, userBitable.bitableToken);
     
     // 更新用户的tableId记录

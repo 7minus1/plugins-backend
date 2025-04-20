@@ -7,8 +7,10 @@ import { User } from './entities/user.entity';
 import { UserBitable } from './entities/user-bitable.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
-import { EmailService } from './services/email.service';
+// import { EmailService } from './services/email.service';
 import { ResumeModule } from '../resume/resume.module';
+// import { SmsService } from './services/sms.service';
+// import { RedisService } from './services/redis.service';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { ResumeModule } from '../resume/resume.module';
     forwardRef(() => ResumeModule),
   ],
   controllers: [UsersController],
-  providers: [UsersService, JwtStrategy, EmailService],
+  providers: [UsersService, JwtStrategy],
   exports: [UsersService],
 })
 export class UsersModule {} 

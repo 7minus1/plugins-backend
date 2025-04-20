@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as lark from '@larksuiteoapi/node-sdk';
+import { BaseClient } from '@lark-base-open/node-sdk';
 import { CreateBitableRecordRequest, CreateBitableRecordResponse } from './dto/feishu.dto';
 import { Readable } from 'stream';
 import { createReadStream } from 'fs';
@@ -42,27 +43,28 @@ const formatDate = (dateStr: string) => {
 
 @Injectable()
 export class FeishuService {
-  private client: lark.Client;
+  // private client: lark.Client;
   // private appToken: string; // 应用的token，用于创建表格
   // private tableId: string; // 表格的ID，用于新增记录
   
 
   constructor(private configService: ConfigService) {
-    this.client = new lark.Client({
-      appId: this.configService.get('FEISHU_APP_ID'),
-      appSecret: this.configService.get('FEISHU_APP_SECRET'),
-      domain: 'https://open.feishu.cn'
-    });
+    // this.client = new lark.Client({
+    //   appId: this.configService.get('FEISHU_APP_ID'),
+    //   appSecret: this.configService.get('FEISHU_APP_SECRET'),
+    //   domain: 'https://open.feishu.cn'
+    // });
     // this.appToken = this.configService.get('FEISHU_APP_TOKEN'); // 从环境变量中获取应用的token
     // this.tableId = this.configService.get('FEISHU_TABLE_ID'); // 从环境变量中获取表格的ID
   }
 
   // 创建多维表格
   async createBitable(appToken: string, bitableToken: string) {
-    return this.client.bitable.appTable.create({
-      path: {
-        app_token: appToken,
-      },
+    const client = new BaseClient({
+      appToken: appToken,
+      personalBaseToken: bitableToken
+    });
+    return client.base.appTable.create({
       data: {
         table: {
           name: '简历表0',   // 新增的数据表名称
@@ -153,8 +155,12 @@ export class FeishuService {
     const tempFilePath = join(tmpdir(), fileName);
     writeFileSync(tempFilePath, file.buffer);
     const stream = createReadStream(tempFilePath);
+    const client = new BaseClient({
+      appToken: appToken,
+      personalBaseToken: bitableToken
+    });
     
-    const fileToken = await this.client.drive.media.uploadAll({
+    const fileToken = await client.drive.media.uploadAll({
       data: {
         file_name: fileName,
         parent_type: 'bitable_file',
@@ -282,9 +288,13 @@ export class FeishuService {
     }
 
     console.log("record", chineseFields);
-    const response = await this.client.bitable.appTableRecord.create({
+    
+    const client = new BaseClient({
+      appToken: appToken,
+      personalBaseToken: bitableToken
+    });
+    const response = await client.base.appTableRecord.create({
       path: {
-        app_token: appToken,
         table_id: tableId,
       },
       data: {

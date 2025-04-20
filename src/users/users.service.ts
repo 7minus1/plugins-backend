@@ -7,7 +7,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateBitableDto } from './dto/update-bitable.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { EmailService } from './services/email.service';
+// import { EmailService } from './services/email.service';
 import { ResumeService } from '../resume/resume.service';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class UsersService {
     @InjectRepository(UserBitable)
     private userBitableRepository: Repository<UserBitable>,
     private jwtService: JwtService,
-    private emailService: EmailService,
+    // private emailService: EmailService,
     @Inject(forwardRef(() => ResumeService))
     private resumeService: ResumeService,
   ) {}
@@ -71,7 +71,7 @@ export class UsersService {
     const savedUser = await this.usersRepository.save(user);
     
     // 发送欢迎邮件
-    await this.emailService.sendWelcomeEmail(user.email, user.username);
+    // await this.emailService.sendWelcomeEmail(user.email, user.username);
     
     return savedUser;
   }
