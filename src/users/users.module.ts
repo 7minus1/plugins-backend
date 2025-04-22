@@ -9,6 +9,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 // import { EmailService } from './services/email.service';
 import { ResumeModule } from '../resume/resume.module';
+import { SmsService } from './services/sms.service';
+import { RedisService } from './services/redis.service';
 // import { SmsService } from './services/sms.service';
 // import { RedisService } from './services/redis.service';
 
@@ -27,7 +29,7 @@ import { ResumeModule } from '../resume/resume.module';
     forwardRef(() => ResumeModule),
   ],
   controllers: [UsersController],
-  providers: [UsersService, JwtStrategy],
+  providers: [UsersService, JwtStrategy, SmsService, RedisService],
   exports: [UsersService],
 })
 export class UsersModule {} 

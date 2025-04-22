@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
 import { createReadStream } from 'fs';
 // import { FeishuService } from '../feishu/feishu.service';
 // import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
@@ -9,6 +9,7 @@ import { ResumeParserDto } from './dto/resume.dto';
 import { FeishuService } from '../feishu/feishu.service';
 import { console } from 'inspector';
 import { UsersService } from '../users/users.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ResumeService {
@@ -18,12 +19,36 @@ export class ResumeService {
     private readonly cloudStorage: TencentCloudService,
     private readonly cozeApi: CozeApiService,
     @Inject(forwardRef(() => UsersService))
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly configService: ConfigService
   ) {
 
   }
 
+  // 获取免费上传次数限制
+  private getFreeUploadLimit(): number {
+    return parseInt(this.configService.get<string>('FREE_UPLOAD_LIMIT', '5'), 10);
+  }
+
   async processResume(file: Express.Multer.File, userId: number) {
+    // 获取用户信息
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 检查用户是否是会员
+    if (!user.isVip) {
+      // 检查上传次数是否超过限制
+      const freeUploadLimit = this.getFreeUploadLimit();
+      if (user.uploadCount >= freeUploadLimit) {
+        throw new ForbiddenException('非会员用户上传次数已达上限，请升级为会员继续使用');
+      }
+      // 更新上传次数
+      user.uploadCount += 1;
+      await this.usersService.update(user.id, user);
+    }
+
     // 获取用户的bitable信息
     const userBitable = await this.usersService.getBitableInfo(userId);
     if (!userBitable) {
@@ -110,6 +135,7 @@ export class ResumeService {
     );
     return {
       ...feishuResponse,
+      remainingUploads: user.isVip ? '无限' : this.getFreeUploadLimit() - user.uploadCount,
     };
   }
 

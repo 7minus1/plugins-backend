@@ -67,7 +67,7 @@ export class FeishuService {
     return client.base.appTable.create({
       data: {
         table: {
-          name: '简历表0',   // 新增的数据表名称
+          name: '简历表',   // 新增的数据表名称
           fields: [
             // 调用转换函数生成字段配置
             ...this.convertToBitableFields()

@@ -8,14 +8,26 @@ export class User {
   @Column({ unique: true, nullable: true })
   username: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   email: string;
 
-  @Column()
+  @Column({ unique: true, nullable: true })
+  phoneNumber: string;
+
+  @Column({ nullable: true })
   password: string;
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: false })
+  isVip: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  vipExpireDate: Date;
+
+  @Column({ default: 0 })
+  uploadCount: number;
 
   @CreateDateColumn()
   createdAt: Date;
