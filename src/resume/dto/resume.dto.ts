@@ -17,7 +17,7 @@ export class EducationItemDto {
 }
 
 export class CareerItemDto {
-  readonly type_str: string;    // 实习/
+  readonly type_str: string; // 实习/
   readonly company: string;
   readonly title: string;
   readonly start_date: string;
@@ -30,9 +30,9 @@ export class CareerItemDto {
 }
 
 export class LanguageItemDto {
-  readonly language: number;    // 语言
-  readonly level: number;       // 等级
-  readonly description: string; // 描述 
+  readonly language: number; // 语言
+  readonly level: number; // 等级
+  readonly description: string; // 描述
 }
 
 export class CerificateItemDto {
@@ -49,13 +49,12 @@ export class ProjectItemDto {
   readonly name: string;
   readonly title: string;
   readonly description: string;
-  readonly start_date: string; 
+  readonly start_date: string;
   readonly end_date: string;
   // --------------------- 以下字段可能会被忽略 -----------------------
   // readonly start_time: string;
   // readonly end_time: string;
 }
-
 
 export class ResumeParserDto {
   readonly name: string;
@@ -71,7 +70,7 @@ export class ResumeParserDto {
   readonly date_of_birth: string;
   readonly current_location: string;
 
-  readonly new_content: string;     // 解析出来的文本内容
+  readonly new_content: string; // 解析出来的文本内容
 
   readonly award_list: AwardItemDto[];
   readonly education_list: EducationItemDto[];

@@ -11,4 +11,4 @@ export class UpdateBitableDto {
   @IsString()
   @IsOptional()
   tableId?: string;
-} 
+}

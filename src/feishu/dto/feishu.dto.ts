@@ -38,4 +38,3 @@ export interface CreateBitableRecordResponse {
   recordId?: string;
   error?: string;
 }
-

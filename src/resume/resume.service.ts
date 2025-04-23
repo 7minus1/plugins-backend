@@ -1,4 +1,9 @@
-import { Injectable, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  ForbiddenException,
+} from '@nestjs/common';
 import { createReadStream } from 'fs';
 // import { FeishuService } from '../feishu/feishu.service';
 // import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
@@ -20,15 +25,8 @@ export class ResumeService {
     private readonly cozeApi: CozeApiService,
     @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
-    private readonly configService: ConfigService
-  ) {
-
-  }
-
-  // 获取免费上传次数限制
-  private getFreeUploadLimit(): number {
-    return parseInt(this.configService.get<string>('FREE_UPLOAD_LIMIT', '5'), 10);
-  }
+    private readonly configService: ConfigService,
+  ) {}
 
   async processResume(file: Express.Multer.File, userId: number) {
     // 获取用户信息
@@ -40,103 +38,160 @@ export class ResumeService {
     // 检查用户是否是会员
     if (!user.isVip) {
       // 检查上传次数是否超过限制
-      const freeUploadLimit = this.getFreeUploadLimit();
-      if (user.uploadCount >= freeUploadLimit) {
-        throw new ForbiddenException('非会员用户上传次数已达上限，请升级为会员继续使用');
+      if (user.uploadCount >= 5) {
+        throw new ForbiddenException(
+          '非会员用户上传次数已达上限，请升级为会员继续使用',
+        );
       }
-      // 更新上传次数
-      user.uploadCount += 1;
-      await this.usersService.update(user.id, user);
     }
 
-    // 获取用户的bitable信息
-    const userBitable = await this.usersService.getBitableInfo(userId);
-    if (!userBitable) {
-      throw new Error('请先配置多维表格信息');
-    }
-    // 解析得到apptoken
-    // userBitable.bitableUrl https://ycntvv3auckv.feishu.cn/base/PinpbcJ1bapzo8skqIpc5h8FnAc?table=tblnMCcEmQkiplen&view=vewmuUeCdJ
-    // userBitable.appToken PinpbcJ1bapzo8skqIpc5h8FnAc
-    const appToken = userBitable.bitableUrl.split('?')[0].split('/').pop();
-    const tableId = userBitable.tableId;
-    const bitableToken = userBitable.bitableToken;
-
-    // TODO: 文件的有效期，可以简历解析完毕后就自动删除
-    // filename命名，要唯一性，防止覆盖，重新命名文件
-    const fileExtension = file.originalname.split('.').pop(); // 获取文件扩展名
-    const newFileName = `${Date.now()}.${fileExtension}`; // 生成新的文件名
-    
-    console.log("newFileName", newFileName);
-    const fileInfo = await this.cloudStorage.uploadFile(
-      newFileName,
-      file.buffer
-    );
-    const fileName = fileInfo.name;
-    const fileUrl = fileInfo.url;
-
-    // 测试上传文件到飞书多维表格
-    const fileToken = await this.feishuService.uploadFile(file, newFileName, appToken, bitableToken);
-    console.log("fileToken", fileToken);
-    const parseResult = await this.cozeApi.executeResumeParser(fileName, fileUrl);
-    
-    const parsedResume: ResumeParserDto = {
-      name: parseResult.name,
-      mobile: parseResult.mobile,
-      gender: parseResult.gender ?? -1,
-      email: parseResult.email,
-      work_year: parseResult.work_year ?? 0,
-      home_location: parseResult.home_location,
-      self_evaluation: parseResult.self_evaluation,
-      willing_location_list: parseResult.willing_location_list,
-      willing_position_list: parseResult.willing_position_list,
-      social_links: parseResult.social_links,
-      date_of_birth: parseResult.date_of_birth,
-      current_location: parseResult.current_location,
-      new_content: parseResult.new_content,
-      award_list: parseResult.award_list.map((award: any) => ({ award: award.award, date: award.date, description: award.description })),
-      education_list: parseResult.education_list.map((education: any) => ({ school: education.school, major: education.major, degree: education.degree, start_date: education.start_date, end_date: education.end_date, qualification: education.qualification })),
-      career_list: parseResult.career_list.map((career: any) => ({ type_str: career.type_str, company: career.company, title: career.title, start_date: career.start_date, end_date: career.end_date, job_description: career.job_description })),
-      language_list: parseResult.language_list.map((language: any) => ({ language: language.language, level: language.level, description: language.description })),
-      certificate_list: parseResult.certificate_list.map((certificate: any) => ({ name: certificate.name, desc: certificate.desc })),
-      competition_list: parseResult.competition_list.map((competition: any) => ({ name: competition.name, desc: competition.desc })),
-      project_list: parseResult.project_list.map((project: any) => ({ name: project.name, title: project.title, description: project.description, start_date: project.start_date, end_date: project.end_date })),
-    };
-
-
-    const feishuResponse = await this.feishuService.addBitableRecord(
-      appToken,
-      tableId,
-      bitableToken,
-      {
-        fields: {
-          file_url: [fileToken],  // 新增附件字段
-          name: parsedResume.name || '',
-          mobile: parsedResume.mobile,
-          email: parsedResume.email,
-          gender: parsedResume.gender.toString() || '0',
-          work_year: parsedResume.work_year?.toString() || '0',
-          home_location: parsedResume.home_location,
-          self_evaluation: parsedResume.self_evaluation,
-          willing_location_list: JSON.stringify(parsedResume.willing_location_list),
-          willing_position_list: JSON.stringify(parsedResume.willing_position_list),
-          social_links: JSON.stringify(parsedResume.social_links),
-          date_of_birth: parsedResume.date_of_birth,
-          current_location: parsedResume.current_location,
-          new_content: parsedResume.new_content,
-          award_list: JSON.stringify(parsedResume.award_list),
-          language_list: JSON.stringify(parsedResume.language_list),
-          certificate_list: JSON.stringify(parsedResume.certificate_list),
-          competition_list: JSON.stringify(parsedResume.competition_list),
-          career_list: JSON.stringify(parsedResume.career_list),
-          education_list: JSON.stringify(parsedResume.education_list),
-          project_list: JSON.stringify(parsedResume.project_list),
-        }
+    try {
+      // 获取用户的bitable信息
+      const userBitable = await this.usersService.getBitableInfo(userId);
+      if (!userBitable) {
+        throw new Error('请先配置多维表格信息');
       }
-    );
-    return {
-      ...feishuResponse,
-      remainingUploads: user.isVip ? '无限' : this.getFreeUploadLimit() - user.uploadCount,
-    };
+
+      // 解析得到apptoken
+      const appToken = userBitable.bitableUrl.split('?')[0].split('/').pop();
+      const tableId = userBitable.tableId;
+      const bitableToken = userBitable.bitableToken;
+
+      // 生成新的文件名
+      const fileExtension = file.originalname.split('.').pop();
+      const newFileName = `${Date.now()}.${fileExtension}`;
+
+      console.log('newFileName', newFileName);
+      const fileInfo = await this.cloudStorage.uploadFile(
+        newFileName,
+        file.buffer,
+      );
+      const fileName = fileInfo.name;
+      const fileUrl = fileInfo.url;
+
+      // 上传文件到飞书多维表格
+      const fileToken = await this.feishuService.uploadFile(
+        file,
+        newFileName,
+        appToken,
+        bitableToken,
+      );
+      console.log('fileToken', fileToken);
+      const parseResult = await this.cozeApi.executeResumeParser(
+        fileName,
+        fileUrl,
+      );
+
+      const parsedResume: ResumeParserDto = {
+        name: parseResult.name,
+        mobile: parseResult.mobile,
+        gender: parseResult.gender ?? -1,
+        email: parseResult.email,
+        work_year: parseResult.work_year ?? 0,
+        home_location: parseResult.home_location,
+        self_evaluation: parseResult.self_evaluation,
+        willing_location_list: parseResult.willing_location_list,
+        willing_position_list: parseResult.willing_position_list,
+        social_links: parseResult.social_links,
+        date_of_birth: parseResult.date_of_birth,
+        current_location: parseResult.current_location,
+        new_content: parseResult.new_content,
+        award_list: parseResult.award_list.map((award: any) => ({
+          award: award.award,
+          date: award.date,
+          description: award.description,
+        })),
+        education_list: parseResult.education_list.map((education: any) => ({
+          school: education.school,
+          major: education.major,
+          degree: education.degree,
+          start_date: education.start_date,
+          end_date: education.end_date,
+          qualification: education.qualification,
+        })),
+        career_list: parseResult.career_list.map((career: any) => ({
+          type_str: career.type_str,
+          company: career.company,
+          title: career.title,
+          start_date: career.start_date,
+          end_date: career.end_date,
+          job_description: career.job_description,
+        })),
+        language_list: parseResult.language_list.map((language: any) => ({
+          language: language.language,
+          level: language.level,
+          description: language.description,
+        })),
+        certificate_list: parseResult.certificate_list.map(
+          (certificate: any) => ({
+            name: certificate.name,
+            desc: certificate.desc,
+          }),
+        ),
+        competition_list: parseResult.competition_list.map(
+          (competition: any) => ({
+            name: competition.name,
+            desc: competition.desc,
+          }),
+        ),
+        project_list: parseResult.project_list.map((project: any) => ({
+          name: project.name,
+          title: project.title,
+          description: project.description,
+          start_date: project.start_date,
+          end_date: project.end_date,
+        })),
+      };
+
+      const feishuResponse = await this.feishuService.addBitableRecord(
+        appToken,
+        tableId,
+        bitableToken,
+        {
+          fields: {
+            file_url: [fileToken],
+            name: parsedResume.name || '',
+            mobile: parsedResume.mobile,
+            email: parsedResume.email,
+            gender: parsedResume.gender.toString() || '0',
+            work_year: parsedResume.work_year?.toString() || '0',
+            home_location: parsedResume.home_location,
+            self_evaluation: parsedResume.self_evaluation,
+            willing_location_list: JSON.stringify(
+              parsedResume.willing_location_list,
+            ),
+            willing_position_list: JSON.stringify(
+              parsedResume.willing_position_list,
+            ),
+            social_links: JSON.stringify(parsedResume.social_links),
+            date_of_birth: parsedResume.date_of_birth,
+            current_location: parsedResume.current_location,
+            new_content: parsedResume.new_content,
+            award_list: JSON.stringify(parsedResume.award_list),
+            language_list: JSON.stringify(parsedResume.language_list),
+            certificate_list: JSON.stringify(parsedResume.certificate_list),
+            competition_list: JSON.stringify(parsedResume.competition_list),
+            career_list: JSON.stringify(parsedResume.career_list),
+            education_list: JSON.stringify(parsedResume.education_list),
+            project_list: JSON.stringify(parsedResume.project_list),
+          },
+        },
+      );
+
+      // 只有在整个流程成功完成后，才增加上传次数
+      if (!user.isVip) {
+        user.uploadCount += 1;
+        await this.usersService.update(user.id, user);
+      }
+
+      return {
+        ...feishuResponse,
+        remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
+      };
+    } catch (error) {
+      // 如果过程中出现任何错误，直接抛出，不增加上传次数
+      throw error;
+    }
   }
 
   // 建立新数据表
@@ -148,12 +203,15 @@ export class ResumeService {
     if (!userBitable) {
       throw new Error('请先配置多维表格信息');
     }
-        
-    const newTableId = await this.feishuService.createNewTable(userBitable.bitableUrl, userBitable.bitableToken);
-    
+
+    const newTableId = await this.feishuService.createNewTable(
+      userBitable.bitableUrl,
+      userBitable.bitableToken,
+    );
+
     // 更新用户的tableId记录
     await this.usersService.updateTableId(userId, newTableId);
-    
+
     return newTableId;
   }
   //   // 返回的parseResult示例
@@ -248,6 +306,4 @@ export class ResumeService {
   //     "willing_position_list": [],
   //     "work_year": 2
   // }
-  
-  
 }

@@ -5,6 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [ConfigModule],
   providers: [FeishuService],
-  exports: [FeishuService]
+  exports: [FeishuService],
 })
 export class FeishuModule {}

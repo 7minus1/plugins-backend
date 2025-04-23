@@ -32,7 +32,7 @@
 //       const outTradeNo = `VIP_${userId}_${Date.now()}`; // 商户订单号
 //       const nonceStr = uuidv4().replace(/-/g, ''); // 随机字符串
 //       const timestamp = Math.floor(Date.now() / 1000).toString(); // 时间戳
-      
+
 //       // 构建统一下单请求参数
 //       const params = {
 //         appid: this.appId,
@@ -45,21 +45,21 @@
 //         notify_url: this.notifyUrl,
 //         trade_type: this.tradeType,
 //       };
-      
+
 //       // 签名
 //       const sign = this.generateSign(params);
-      
+
 //       // 构建XML请求体
 //       const xml = this.buildXml({ ...params, sign });
-      
+
 //       // 发送请求到微信支付接口
 //       const response = await axios.post('https://api.mch.weixin.qq.com/pay/unifiedorder', xml, {
 //         headers: { 'Content-Type': 'text/xml' },
 //       });
-      
+
 //       // 解析响应
 //       const result = this.parseXml(response.data);
-      
+
 //       if (result.return_code === 'SUCCESS' && result.result_code === 'SUCCESS') {
 //         // 返回二维码链接
 //         return result.code_url;
@@ -81,17 +81,17 @@
 //   verifyNotify(xmlData: string): any {
 //     try {
 //       const data = this.parseXml(xmlData);
-      
+
 //       // 验证签名
 //       const sign = data.sign;
 //       delete data.sign;
 //       const calculatedSign = this.generateSign(data);
-      
+
 //       if (sign !== calculatedSign) {
 //         this.logger.error('微信支付回调签名验证失败');
 //         return null;
 //       }
-      
+
 //       return data;
 //     } catch (error) {
 //       this.logger.error(`解析微信支付回调数据失败: ${error.message}`);
@@ -107,7 +107,7 @@
 //   private generateSign(params: any): string {
 //     // 1. 参数名ASCII码从小到大排序
 //     const sortedKeys = Object.keys(params).sort();
-    
+
 //     // 2. 拼接字符串
 //     let stringSignTemp = '';
 //     for (const key of sortedKeys) {
@@ -115,10 +115,10 @@
 //         stringSignTemp += `${key}=${params[key]}&`;
 //       }
 //     }
-    
+
 //     // 3. 拼接API密钥
 //     stringSignTemp += `key=${this.apiKey}`;
-    
+
 //     // 4. MD5加密并转大写
 //     return crypto.createHash('md5').update(stringSignTemp).digest('hex').toUpperCase();
 //   }
@@ -146,11 +146,11 @@
 //     const result = {};
 //     const reg = /<([^>]+)>([^<]+)<\/\1>/g;
 //     let match;
-    
+
 //     while ((match = reg.exec(xml)) !== null) {
 //       result[match[1]] = match[2];
 //     }
-    
+
 //     return result;
 //   }
-// } 
+// }

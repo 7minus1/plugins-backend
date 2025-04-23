@@ -15,41 +15,43 @@ export class CozeApiService {
 
   constructor(
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {
     this.config = {
       endpoint: this.configService.get('COZE_API_ENDPOINT'),
       apiKey: this.configService.get('COZE_API_KEY'),
-      workflowId: this.configService.get('COZE_WORKFLOW_ID')
+      workflowId: this.configService.get('COZE_WORKFLOW_ID'),
     };
   }
 
   async executeResumeParser(fileName: string, fileUrl: string) {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.post(
-          this.config.endpoint,
-          {
-            parameters: {
-              file_name: fileName,
-              file_url: fileUrl,
+        this.httpService
+          .post(
+            this.config.endpoint,
+            {
+              parameters: {
+                file_name: fileName,
+                file_url: fileUrl,
+              },
+              workflow_id: this.config.workflowId,
             },
-            workflow_id: this.config.workflowId,
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${this.config.apiKey}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        ).pipe(
-          catchError(error => {
-            throw new HttpException(
-              `Coze API请求失败: ${error.response?.data?.message || error.message}`,
-              HttpStatus.BAD_REQUEST
-            );
-          })
-        )
+            {
+              headers: {
+                Authorization: `Bearer ${this.config.apiKey}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          )
+          .pipe(
+            catchError((error) => {
+              throw new HttpException(
+                `Coze API请求失败: ${error.response?.data?.message || error.message}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }),
+          ),
       );
       // console.log(data);
       /*
@@ -66,7 +68,7 @@ export class CozeApiService {
     } catch (error) {
       throw new HttpException(
         `简历解析失败: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

@@ -16,8 +16,8 @@ describe('TencentCloudService', () => {
               if (key === 'TENCENT_COS_BUCKET') return 'test-bucket';
               if (key === 'TENCENT_COS_SECRET_ID') return 'test-secret-id';
               if (key === 'TENCENT_COS_SECRET_KEY') return 'test-secret-key';
-            })
-          }
+            }),
+          },
         },
         TencentCloudService,
       ],
@@ -29,11 +29,16 @@ describe('TencentCloudService', () => {
   it('正常上传文件', async () => {
     const mockFile = {
       originalname: 'test.pdf',
-      buffer: Buffer.from('test content')
+      buffer: Buffer.from('test content'),
     };
 
-    const result = await service.uploadFile(mockFile.originalname, mockFile.buffer);
-    expect(result.url.url).toContain('https://test-bucket.cos.ap-shanghai.myqcloud.com/test.pdf');
+    const result = await service.uploadFile(
+      mockFile.originalname,
+      mockFile.buffer,
+    );
+    expect(result.url.url).toContain(
+      'https://test-bucket.cos.ap-shanghai.myqcloud.com/test.pdf',
+    );
   });
 
   it('配置验证', () => {

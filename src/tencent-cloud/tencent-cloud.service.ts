@@ -27,12 +27,12 @@ export class TencentCloudService {
         Region: this.config.get('TENCENT_COS_REGION'),
         Key: filename,
         Body: buffer,
-        ACL: 'public-read'
+        ACL: 'public-read',
       });
 
       return {
         url: `https://${result.Location}`,
-        name: filename
+        name: filename,
       };
     } catch (error) {
       throw new Error(`COS文件上传失败: ${error.message}`);

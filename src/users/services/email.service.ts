@@ -19,12 +19,11 @@ export class EmailService {
 
     this.transporter.verify(function (error, success) {
       if (error) {
-        console.log(error)
-      }else{
-        console.log('email is ready')
+        console.log(error);
+      } else {
+        console.log('email is ready');
       }
-    })
-    
+    });
   }
 
   async sendWelcomeEmail(email: string, username: string) {
@@ -70,4 +69,4 @@ export class EmailService {
       return false;
     }
   }
-} 
+}

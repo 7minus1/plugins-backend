@@ -32,4 +32,4 @@ import { RedisService } from './services/redis.service';
   providers: [UsersService, JwtStrategy, SmsService, RedisService],
   exports: [UsersService],
 })
-export class UsersModule {} 
+export class UsersModule {}

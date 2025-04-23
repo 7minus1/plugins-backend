@@ -33,7 +33,7 @@
 //   @ApiOperation({ summary: '微信支付回调接口' })
 //   async handlePaymentNotify(@Body() xmlData: string, @Res() res: Response) {
 //     const notifyData = this.wechatPayService.verifyNotify(xmlData);
-    
+
 //     if (!notifyData) {
 //       return res.status(HttpStatus.BAD_REQUEST).send('FAIL');
 //     }
@@ -46,12 +46,12 @@
 //       // 更新用户VIP状态
 //       const oneYearLater = new Date();
 //       oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-      
+
 //       await this.usersService.updateVipStatus(userId, true, oneYearLater);
-      
+
 //       return res.send('<xml><return_code><![CDATA[SUCCESS]]></return_code></xml>');
 //     }
 
 //     return res.status(HttpStatus.BAD_REQUEST).send('FAIL');
 //   }
-// } 
+// }

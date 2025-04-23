@@ -6,6 +6,6 @@ import { CozeApiService } from './coze-api.service';
 @Module({
   imports: [HttpModule, ConfigModule],
   providers: [CozeApiService],
-  exports: [CozeApiService]
+  exports: [CozeApiService],
 })
 export class CozeApiModule {}

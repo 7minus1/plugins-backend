@@ -28,4 +28,4 @@ export class RedisService {
     const key = `verification_code:${phoneNumber}`;
     await this.client.del(key);
   }
-} 
+}

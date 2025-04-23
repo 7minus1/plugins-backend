@@ -22,6 +22,9 @@ import { AuthModule } from './auth/auth.module';
       database: process.env.DB_DATABASE,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV !== 'production',
+      extra: {
+        charset: 'utf8mb4_unicode_ci',
+      },
     }),
     UsersModule,
     ResumeModule,
