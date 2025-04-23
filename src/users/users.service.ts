@@ -150,12 +150,28 @@ export class UsersService {
     return this.userBitableRepository.update({ userId }, { tableId });
   }
 
+  private extractTableIdFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const tableId = urlObj.searchParams.get('table');
+      if (!tableId) {
+        throw new Error('无法从URL中提取tableId');
+      }
+      return tableId;
+    } catch (error) {
+      throw new Error('无效的飞书多维表格URL');
+    }
+  }
+
   async updateBitableInfo(userId: number, updateBitableDto: UpdateBitableDto) {
     try {
       const user = await this.findById(userId);
       if (!user) {
         throw new NotFoundException('User not found');
       }
+
+      // 从 URL 中提取 tableId
+      const tableId = this.extractTableIdFromUrl(updateBitableDto.bitableUrl);
 
       let userBitable = await this.userBitableRepository.findOne({
         where: { userId },
@@ -167,25 +183,16 @@ export class UsersService {
           userId,
           bitableUrl: updateBitableDto.bitableUrl,
           bitableToken: updateBitableDto.bitableToken,
+          tableId: tableId
         });
       } else {
         userBitable.bitableUrl = updateBitableDto.bitableUrl;
         userBitable.bitableToken = updateBitableDto.bitableToken;
+        userBitable.tableId = tableId;
       }
 
       // 保存bitable信息
       userBitable = await this.userBitableRepository.save(userBitable);
-
-      // 创建新表并更新tableId
-      try {
-        const newTableId = await this.resumeService.createNewTable(userId);
-        userBitable.tableId = newTableId;
-        userBitable = await this.userBitableRepository.save(userBitable);
-      } catch (error) {
-        console.error('Error creating new table:', error);
-        // 这里我们不抛出错误，因为bitable信息已经更新成功
-      }
-
       return userBitable;
     } catch (error) {
       console.error('Error updating bitable info:', error);
