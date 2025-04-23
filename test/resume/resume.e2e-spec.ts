@@ -15,7 +15,7 @@ describe('ResumeController (e2e)', () => {
     uploadFile: jest
       .fn()
       .mockResolvedValue('https://oss.example.com/resume.pdf')
-      .mockRejectedValueOnce(new Error('Invalid file format'))
+      .mockRejectedValueOnce(new Error('Invalid file format')),
   };
 
   const mockCozeApi = {
@@ -24,9 +24,9 @@ describe('ResumeController (e2e)', () => {
       .mockResolvedValue({
         name: '张三',
         contact: '13800138000',
-        education: [{ school: '清华大学' }]
+        education: [{ school: '清华大学' }],
       })
-      .mockRejectedValueOnce(new Error('API timeout'))
+      .mockRejectedValueOnce(new Error('API timeout')),
   };
 
   beforeEach(async () => {
@@ -34,8 +34,8 @@ describe('ResumeController (e2e)', () => {
       controllers: [ResumeController],
       providers: [
         { provide: CloudStorageService, useValue: mockCloudStorage },
-        { provide: CozeApiService, useValue: mockCozeApi }
-      ]
+        { provide: CozeApiService, useValue: mockCozeApi },
+      ],
     }).compile();
 
     app = module.createNestApplication();
@@ -49,9 +49,11 @@ describe('ResumeController (e2e)', () => {
       .field('position', '全栈工程师')
       .attach('file', Buffer.from('test'), 'valid.pdf')
       .expect(201)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body).toHaveProperty('fileUrl');
-        expect(res.body.fileUrl).toMatch(/^https:\/\/oss\.example\.com\/.+\.pdf$/);
+        expect(res.body.fileUrl).toMatch(
+          /^https:\/\/oss\.example\.com\/.+\.pdf$/,
+        );
       });
   });
 
@@ -61,7 +63,7 @@ describe('ResumeController (e2e)', () => {
       .field('name', '王五')
       .attach('file', Buffer.from('test'), 'invalid.txt')
       .expect(400)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.message).toContain('Invalid file format');
       });
   });
@@ -71,7 +73,7 @@ describe('ResumeController (e2e)', () => {
       .post('/resume')
       .attach('file', Buffer.from('test'), 'timeout.pdf')
       .expect(500)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.message).toContain('API timeout');
       });
   });

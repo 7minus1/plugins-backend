@@ -25,7 +25,10 @@ export class SmsService {
     });
   }
 
-  async sendVerificationCode(phoneNumber: string, code: string): Promise<boolean> {
+  async sendVerificationCode(
+    phoneNumber: string,
+    code: string,
+  ): Promise<boolean> {
     try {
       const params = {
         SmsSdkAppId: this.configService.get('TENCENT_SMS_SDK_APP_ID'),
@@ -44,4 +47,4 @@ export class SmsService {
       return false;
     }
   }
-} 
+}

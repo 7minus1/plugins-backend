@@ -16,15 +16,16 @@ describe('CloudStorageService', () => {
               if (key === 'OSS_BUCKET') return 'test-bucket';
               if (key === 'OSS_ACCESS_KEY_ID') return 'test-access-key';
               if (key === 'OSS_ACCESS_KEY_SECRET') return 'test-secret-key';
-            })
-          }
+            }),
+          },
         },
         {
           provide: CloudStorageService,
           useValue: {
-            uploadFile: jest.fn()
+            uploadFile: jest
+              .fn()
               .mockResolvedValue('https://oss.example.com/valid-file.pdf')
-              .mockRejectedValueOnce(new Error('Invalid file format'))
+              .mockRejectedValueOnce(new Error('Invalid file format')),
           },
         },
       ],
@@ -39,7 +40,10 @@ describe('CloudStorageService', () => {
       buffer: Buffer.from('test content'),
     };
 
-    const result = await service.uploadFile(mockFile.originalname, mockFile.buffer);
+    const result = await service.uploadFile(
+      mockFile.originalname,
+      mockFile.buffer,
+    );
     expect(result).toMatch(/^https:\/\/oss\.example\.com\/.+\.pdf$/);
     expect(service.uploadFile).toBeCalledWith('test.pdf', expect.any(Buffer));
   });
@@ -50,17 +54,21 @@ describe('CloudStorageService', () => {
       buffer: Buffer.from('invalid content'),
     };
 
-    await expect(service.uploadFile(mockFile.originalname, mockFile.buffer))
-      .rejects.toThrow('Invalid file format');
+    await expect(
+      service.uploadFile(mockFile.originalname, mockFile.buffer),
+    ).rejects.toThrow('Invalid file format');
   });
 
   it('大文件分片上传', async () => {
     const largeFile = {
       originalname: 'large-video.mp4',
-      buffer: Buffer.alloc(1024 * 1024 * 21) // 21MB
+      buffer: Buffer.alloc(1024 * 1024 * 21), // 21MB
     };
 
-    const result = await service.uploadFile(largeFile.originalname, largeFile.buffer);
+    const result = await service.uploadFile(
+      largeFile.originalname,
+      largeFile.buffer,
+    );
     expect(result).toContain('multipart-upload-id=');
   });
 });
@@ -99,7 +107,7 @@ describe('OSS配置验证', () => {
             },
           },
         ],
-      }).compile()
+      }).compile(),
     ).rejects.toThrowError(/InvalidAccessKeyId/);
   });
 });

@@ -1,4 +1,11 @@
-import { Injectable, ConflictException, NotFoundException, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -34,11 +41,15 @@ export class UsersService {
 
   // 获取免费上传次数限制
   private getFreeUploadLimit(): number {
-    return parseInt(this.configService.get<string>('FREE_UPLOAD_LIMIT', '5'), 10);
+    return parseInt(
+      this.configService.get<string>('FREE_UPLOAD_LIMIT', '5'),
+      10,
+    );
   }
 
   private generateRandomUsername(): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars =
+      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let username = '';
     for (let i = 0; i < 8; i++) {
       username += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -49,7 +60,7 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     // 检查手机号是否已存在
     const existingPhone = await this.usersRepository.findOne({
-      where: { phoneNumber: createUserDto.phoneNumber }
+      where: { phoneNumber: createUserDto.phoneNumber },
     });
 
     if (existingPhone) {
@@ -60,19 +71,6 @@ export class UsersService {
     let username = createUserDto.username;
     if (!username) {
       username = this.generateRandomUsername();
-      // 确保生成的用户名不重复
-      while (await this.usersRepository.findOne({ where: { username } })) {
-        username = this.generateRandomUsername();
-      }
-    } else {
-      // 检查用户名是否已存在
-      const existingUsername = await this.usersRepository.findOne({
-        where: { username }
-      });
-
-      if (existingUsername) {
-        throw new ConflictException('用户名已存在');
-      }
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -88,7 +86,7 @@ export class UsersService {
 
   async findByPhone(phoneNumber: string): Promise<User> {
     const user = await this.usersRepository.findOne({
-      where: { phoneNumber }
+      where: { phoneNumber },
     });
 
     if (!user) {
@@ -110,14 +108,18 @@ export class UsersService {
   }
 
   async login(user: User) {
-    const payload = { phoneNumber: user.phoneNumber, sub: user.id, username: user.username };
+    const payload = {
+      phoneNumber: user.phoneNumber,
+      sub: user.id,
+      username: user.username,
+    };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         phoneNumber: user.phoneNumber,
-        username: user.username
-      }
+        username: user.username,
+      },
     };
   }
 
@@ -135,7 +137,9 @@ export class UsersService {
   }
 
   async getBitableInfo(userId: number) {
-    const userBitable = await this.userBitableRepository.findOne({ where: { userId } });
+    const userBitable = await this.userBitableRepository.findOne({
+      where: { userId },
+    });
     if (!userBitable) {
       return null;
     }
@@ -143,10 +147,7 @@ export class UsersService {
   }
 
   async updateTableId(userId: number, tableId: string) {
-    return this.userBitableRepository.update(
-      { userId },
-      { tableId }
-    );
+    return this.userBitableRepository.update({ userId }, { tableId });
   }
 
   async updateBitableInfo(userId: number, updateBitableDto: UpdateBitableDto) {
@@ -156,8 +157,10 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      let userBitable = await this.userBitableRepository.findOne({ where: { userId } });
-      
+      let userBitable = await this.userBitableRepository.findOne({
+        where: { userId },
+      });
+
       if (!userBitable) {
         userBitable = this.userBitableRepository.create({
           user,
@@ -213,7 +216,7 @@ export class UsersService {
 
   async loginOrRegisterWithPhone(phoneNumber: string): Promise<any> {
     let user = await this.findByPhone(phoneNumber);
-    
+
     if (!user) {
       // 如果用户不存在，创建新用户
       const username = this.generateRandomUsername();
@@ -225,23 +228,29 @@ export class UsersService {
       await this.usersRepository.save(user);
     }
 
-    const payload = { phoneNumber: user.phoneNumber, sub: user.id, username: user.username };
+    const payload = {
+      phoneNumber: user.phoneNumber,
+      sub: user.id,
+      username: user.username,
+    };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         phoneNumber: user.phoneNumber,
-        username: user.username
-      }
+        username: user.username,
+      },
     };
   }
 
-  async testSendSms(phoneNumber: string): Promise<{ success: boolean; code?: string }> {
+  async testSendSms(
+    phoneNumber: string,
+  ): Promise<{ success: boolean; code?: string }> {
     const code = '123456'; // 测试用固定验证码
     const sent = await this.smsService.sendVerificationCode(phoneNumber, code);
     return {
       success: sent,
-      code: sent ? code : undefined
+      code: sent ? code : undefined,
     };
   }
 
@@ -250,8 +259,10 @@ export class UsersService {
     const freeUploadLimit = this.getFreeUploadLimit();
     return {
       uploadCount: user.uploadCount,
-      remainingCount: user.isVip ? -1 : Math.max(0, freeUploadLimit - user.uploadCount),
-      isUnlimited: user.isVip
+      remainingCount: user.isVip
+        ? -1
+        : Math.max(0, freeUploadLimit - user.uploadCount),
+      isUnlimited: user.isVip,
     };
   }
 
@@ -261,7 +272,11 @@ export class UsersService {
    * @param isVip 是否为VIP
    * @param vipExpireDate VIP过期时间
    */
-  async updateVipStatus(userId: number, isVip: boolean, vipExpireDate: Date): Promise<User> {
+  async updateVipStatus(
+    userId: number,
+    isVip: boolean,
+    vipExpireDate: Date,
+  ): Promise<User> {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('用户不存在');
@@ -269,7 +284,7 @@ export class UsersService {
 
     user.isVip = isVip;
     user.vipExpireDate = vipExpireDate;
-    
+
     return await this.usersRepository.save(user);
   }
-} 
+}

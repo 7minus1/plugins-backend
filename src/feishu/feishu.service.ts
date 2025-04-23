@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as lark from '@larksuiteoapi/node-sdk';
 import { BaseClient } from '@lark-base-open/node-sdk';
-import { CreateBitableRecordRequest, CreateBitableRecordResponse } from './dto/feishu.dto';
+import {
+  CreateBitableRecordRequest,
+  CreateBitableRecordResponse,
+} from './dto/feishu.dto';
 import { Readable } from 'stream';
 import { createReadStream } from 'fs';
 import { join } from 'path';
@@ -31,7 +34,7 @@ const FIELD_NAME_MAP = {
   certificate_list: '证书',
   competition_list: '竞赛经历',
   project_list: '项目经历',
-  file_url: '简历文件'
+  file_url: '简历文件',
 } as const;
 
 // 工具函数：格式化日期，只保留年月
@@ -46,7 +49,6 @@ export class FeishuService {
   // private client: lark.Client;
   // private appToken: string; // 应用的token，用于创建表格
   // private tableId: string; // 表格的ID，用于新增记录
-  
 
   constructor(private configService: ConfigService) {
     // this.client = new lark.Client({
@@ -62,19 +64,22 @@ export class FeishuService {
   async createBitable(appToken: string, bitableToken: string) {
     const client = new BaseClient({
       appToken: appToken,
-      personalBaseToken: bitableToken
+      personalBaseToken: bitableToken,
     });
-    return client.base.appTable.create({
-      data: {
-        table: {
-          name: '简历表',   // 新增的数据表名称
-          fields: [
-            // 调用转换函数生成字段配置
-            ...this.convertToBitableFields()
-          ],
-        }
-      }
-    }, lark.withTenantToken(bitableToken));
+    return client.base.appTable.create(
+      {
+        data: {
+          table: {
+            name: '简历表', // 新增的数据表名称
+            fields: [
+              // 调用转换函数生成字段配置
+              ...this.convertToBitableFields(),
+            ],
+          },
+        },
+      },
+      lark.withTenantToken(bitableToken),
+    );
   }
 
   /**
@@ -82,17 +87,18 @@ export class FeishuService {
    * @returns 飞书多维表格的字段配置数组
    */
   convertToBitableFields() {
-    const fieldsConfig: any[] = [
-      {
-        "field_name": "序号",
-        "type": 1005
-      }
-    ];
+    // const fieldsConfig: any[] = [
+    //   {
+    //     "field_name": "序号",
+    //     "type": 1005
+    //   }
+    // ];
 
+    const fieldsConfig: any[] = [];
     const sampleRequest: CreateBitableRecordRequest = {
       fields: {
-        file_url: [],
         name: '',
+        file_url: [],
         mobile: '',
         gender: '',
         email: '',
@@ -112,7 +118,7 @@ export class FeishuService {
         certificate_list: '',
         competition_list: '',
         project_list: '',
-      }
+      },
     };
 
     for (const fieldName in sampleRequest.fields) {
@@ -123,8 +129,8 @@ export class FeishuService {
       if (fieldName === 'file_url') {
         type = 17;
       }
-      
-      // ! 不支持 Email类型 |当字段 UI 展示的类型为邮箱时，其property 应设为 null 
+
+      // ! 不支持 Email类型 |当字段 UI 展示的类型为邮箱时，其property 应设为 null
       // if (fieldName === 'email') {
       //   type = 1;
       //   ui_type = 'Phone';
@@ -141,7 +147,7 @@ export class FeishuService {
         field_name: FIELD_NAME_MAP[fieldName as keyof typeof FIELD_NAME_MAP], // 使用中文名称
         type,
         ...(ui_type && { ui_type }),
-        ...(fieldName === 'email' && { property: null })
+        ...(fieldName === 'email' && { property: null }),
       };
       fieldsConfig.push(fieldConfig);
     }
@@ -149,42 +155,49 @@ export class FeishuService {
     console.log(fieldsConfig);
     return fieldsConfig;
   }
-  
-  async uploadFile(file: Express.Multer.File, fileName: string, appToken: string, bitableToken: string) {
+
+  async uploadFile(
+    file: Express.Multer.File,
+    fileName: string,
+    appToken: string,
+    bitableToken: string,
+  ) {
     // 将 buffer 写入临时文件并创建可读流
     const tempFilePath = join(tmpdir(), fileName);
     writeFileSync(tempFilePath, file.buffer);
     const stream = createReadStream(tempFilePath);
     const client = new BaseClient({
       appToken: appToken,
-      personalBaseToken: bitableToken
+      personalBaseToken: bitableToken,
     });
-    
-    const fileToken = await client.drive.media.uploadAll({
-      data: {
-        file_name: fileName,
-        parent_type: 'bitable_file',
-        parent_node: appToken,
-        size: file.size,
-        file: stream
-      },
-    },
-    lark.withTenantToken(bitableToken));
 
-    return fileToken;  // 一串字符串 ICTLbSvFhoWB3TxwpgicgfE4ned
+    const fileToken = await client.drive.media.uploadAll(
+      {
+        data: {
+          file_name: fileName,
+          parent_type: 'bitable_file',
+          parent_node: appToken,
+          size: file.size,
+          file: stream,
+        },
+      },
+      lark.withTenantToken(bitableToken),
+    );
+
+    return fileToken; // 一串字符串 ICTLbSvFhoWB3TxwpgicgfE4ned
   }
 
   async addBitableRecord(
     appToken: string,
     tableId: string,
     bitableToken: string,
-    record: CreateBitableRecordRequest
+    record: CreateBitableRecordRequest,
   ): Promise<CreateBitableRecordResponse> {
     // 将英文字段名转换为中文字段名
     const chineseFields: Record<string, any> = {};
     for (const [key, value] of Object.entries(record.fields)) {
       let formattedValue = value;
-      
+
       // 处理性别字段
       if (key === 'gender') {
         switch (value) {
@@ -204,7 +217,11 @@ export class FeishuService {
       else if (Array.isArray(value)) {
         // 如果列表为空，直接设置为空字符串
         formattedValue = value.length === 0 ? '' : value;
-      } else if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
+      } else if (
+        typeof value === 'string' &&
+        value.startsWith('[') &&
+        value.endsWith(']')
+      ) {
         try {
           const parsedValue = JSON.parse(value);
           if (Array.isArray(parsedValue)) {
@@ -213,66 +230,72 @@ export class FeishuService {
               formattedValue = '';
             } else if (key === 'education_list') {
               // 特殊处理教育经历
-              formattedValue = parsedValue.map(edu => {
-                const parts = [
-                  edu.school || '',
-                  formatDate(edu.start_date),
-                  formatDate(edu.end_date),
-                  edu.major || '',
-                  edu.degree || '',
-                  edu.qualification || ''
-                ].filter(Boolean); // 过滤掉空值
-                return parts.join(', ');
-              }).join('\n');
+              formattedValue = parsedValue
+                .map((edu) => {
+                  const parts = [
+                    edu.school || '',
+                    formatDate(edu.start_date),
+                    formatDate(edu.end_date),
+                    edu.major || '',
+                    edu.degree || '',
+                    edu.qualification || '',
+                  ].filter(Boolean); // 过滤掉空值
+                  return parts.join(', ');
+                })
+                .join('\n');
             } else if (key === 'award_list') {
               // 特殊处理获奖经历，只取description字段
               formattedValue = parsedValue
-                .map(award => award.description || '')
+                .map((award) => award.description || '')
                 .filter(Boolean) // 过滤掉空值
                 .join('\n');
             } else if (key === 'career_list') {
               // 特殊处理工作经历
-              formattedValue = parsedValue.map(career => {
-                const parts = [
-                  career.company || '',
-                  career.title || '',
-                  career.type_str || '',
-                  formatDate(career.start_date),
-                  formatDate(career.end_date),
-                  career.job_description || ''
-                ].filter(Boolean); // 过滤掉空值
-                return parts.join(', ');
-              }).join('\n');
+              formattedValue = parsedValue
+                .map((career) => {
+                  const parts = [
+                    career.company || '',
+                    career.title || '',
+                    career.type_str || '',
+                    formatDate(career.start_date),
+                    formatDate(career.end_date),
+                    career.job_description || '',
+                  ].filter(Boolean); // 过滤掉空值
+                  return parts.join(', ');
+                })
+                .join('\n');
             } else if (key === 'language_list') {
               // 特殊处理语言能力，只取description字段
               formattedValue = parsedValue
-                .map(lang => lang.description || '')
+                .map((lang) => lang.description || '')
                 .filter(Boolean) // 过滤掉空值
                 .join('\n');
             } else if (key === 'certificate_list') {
               // 特殊处理证书，只取name字段
               formattedValue = parsedValue
-                .map(cert => cert.name || '')
+                .map((cert) => cert.name || '')
                 .filter(Boolean) // 过滤掉空值
                 .join('\n');
             } else if (key === 'competition_list') {
               // 特殊处理竞赛经历，只取desc字段
               formattedValue = parsedValue
-                .map(comp => comp.desc || '')
+                .map((comp) => comp.desc || '')
                 .filter(Boolean) // 过滤掉空值
                 .join('\n');
             } else if (key === 'project_list') {
               // 特殊处理项目经历
-              formattedValue = parsedValue.map(project => {
-                const parts = [
-                  project.name || '',
-                  project.title || '',
-                  formatDate(project.start_date),
-                  formatDate(project.end_date),
-                  project.description || ''
-                ].filter(Boolean); // 过滤掉空值
-                return parts.join(', ');
-              }).join('\n');
+              formattedValue = parsedValue
+                .map((project) => {
+                  const parts = [
+                    project.name || '',
+                    project.title || '',
+                    formatDate(project.start_date),
+                    formatDate(project.end_date),
+                    project.description || '',
+                  ].filter(Boolean); // 过滤掉空值
+                  return parts.join(', ');
+                })
+                .join('\n');
             } else {
               // 其他列表类型保持原样
               formattedValue = value;
@@ -284,36 +307,40 @@ export class FeishuService {
         }
       }
 
-      chineseFields[FIELD_NAME_MAP[key as keyof typeof FIELD_NAME_MAP]] = formattedValue;
+      chineseFields[FIELD_NAME_MAP[key as keyof typeof FIELD_NAME_MAP]] =
+        formattedValue;
     }
 
-    console.log("record", chineseFields);
-    
+    console.log('record', chineseFields);
+
     const client = new BaseClient({
       appToken: appToken,
-      personalBaseToken: bitableToken
+      personalBaseToken: bitableToken,
     });
-    const response = await client.base.appTableRecord.create({
-      path: {
-        table_id: tableId,
+    const response = await client.base.appTableRecord.create(
+      {
+        path: {
+          table_id: tableId,
+        },
+        data: {
+          fields: chineseFields,
+        },
       },
-      data: {
-        fields: chineseFields
-      }
-    }, lark.withTenantToken(bitableToken));
+      lark.withTenantToken(bitableToken),
+    );
 
-    console.log("response", response);
+    console.log('response', response);
 
     return {
       recordId: response.data.record?.record_id,
-      error: response.code !== 0 ? response.msg : undefined
+      error: response.code !== 0 ? response.msg : undefined,
     };
   }
 
   async createNewTable(bitableUrl: string, bitableToken: string) {
     // 从bitableUrl中解析appToken
     const appToken = bitableUrl.split('?')[0].split('/').pop();
-    
+
     // 建表
     const create_res = await this.createBitable(appToken, bitableToken);
     console.log(create_res);

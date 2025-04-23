@@ -27,6 +27,6 @@ import { UsersModule } from '../users/users.module';
   ],
   controllers: [ResumeController],
   providers: [ResumeService, FeishuService],
-  exports: [ResumeService]
+  exports: [ResumeService],
 })
 export class ResumeModule {}

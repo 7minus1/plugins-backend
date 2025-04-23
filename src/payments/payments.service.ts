@@ -65,11 +65,14 @@ export class PaymentsService {
 
   async handlePaymentNotify(notifyData: any) {
     const { resource } = notifyData;
-    const { out_trade_no, transaction_id, trade_state } = resource.original_type === 'encrypt' 
-      ? this.wxpay.decipher_gcm(resource) 
-      : resource;
+    const { out_trade_no, transaction_id, trade_state } =
+      resource.original_type === 'encrypt'
+        ? this.wxpay.decipher_gcm(resource)
+        : resource;
 
-    const payment = await this.paymentsRepository.findOne({ where: { orderNo: out_trade_no } });
+    const payment = await this.paymentsRepository.findOne({
+      where: { orderNo: out_trade_no },
+    });
     if (!payment) {
       throw new NotFoundException('订单不存在');
     }
@@ -89,4 +92,4 @@ export class PaymentsService {
 
     return { code: 'SUCCESS', message: '成功' };
   }
-} 
+}

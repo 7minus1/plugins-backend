@@ -11,4 +11,4 @@ export class VerifyCodeDto {
 
   @IsString()
   code: string;
-} 
+}

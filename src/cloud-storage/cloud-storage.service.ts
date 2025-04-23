@@ -23,7 +23,7 @@ export class CloudStorageService {
 
   async uploadFile(filename: string, buffer: Buffer) {
     return this.client.put(filename, buffer, {
-      headers: { 'x-oss-object-acl': 'public-read' }
+      headers: { 'x-oss-object-acl': 'public-read' },
     });
 
     /**

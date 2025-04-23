@@ -5,6 +5,6 @@ import { CloudStorageService } from './cloud-storage.service';
 @Module({
   imports: [ConfigModule],
   providers: [CloudStorageService],
-  exports: [CloudStorageService]
+  exports: [CloudStorageService],
 })
 export class CloudStorageModule {}

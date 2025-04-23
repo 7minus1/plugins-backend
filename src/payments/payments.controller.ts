@@ -20,4 +20,4 @@ export class PaymentsController {
   async handlePaymentNotify(@Body() notifyData: any) {
     return this.paymentsService.handlePaymentNotify(notifyData);
   }
-} 
+}
