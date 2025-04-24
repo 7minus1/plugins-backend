@@ -77,69 +77,76 @@ export class ResumeService {
         bitableToken,
       );
       console.log('fileToken', fileToken);
+
+      // 解析简历
       const parseResult = await this.cozeApi.executeResumeParser(
         fileName,
         fileUrl,
       );
 
+      // 验证解析结果
+      if (!parseResult) {
+        throw new Error('简历解析失败：未能获取解析结果');
+      }
+
       const parsedResume: ResumeParserDto = {
-        name: parseResult.name,
-        mobile: parseResult.mobile,
+        name: parseResult.name || '',
+        mobile: parseResult.mobile || '',
         gender: parseResult.gender ?? -1,
-        email: parseResult.email,
+        email: parseResult.email || '',
         work_year: parseResult.work_year ?? 0,
-        home_location: parseResult.home_location,
-        self_evaluation: parseResult.self_evaluation,
-        willing_location_list: parseResult.willing_location_list,
-        willing_position_list: parseResult.willing_position_list,
-        social_links: parseResult.social_links,
-        date_of_birth: parseResult.date_of_birth,
-        current_location: parseResult.current_location,
-        new_content: parseResult.new_content,
-        award_list: parseResult.award_list.map((award: any) => ({
-          award: award.award,
-          date: award.date,
-          description: award.description,
+        home_location: parseResult.home_location || '',
+        self_evaluation: parseResult.self_evaluation || '',
+        willing_location_list: parseResult.willing_location_list || [],
+        willing_position_list: parseResult.willing_position_list || [],
+        social_links: parseResult.social_links || [],
+        date_of_birth: parseResult.date_of_birth || '',
+        current_location: parseResult.current_location || '',
+        new_content: parseResult.new_content || '',
+        award_list: (parseResult.award_list || []).map((award: any) => ({
+          award: award.award || '',
+          date: award.date || '',
+          description: award.description || '',
         })),
-        education_list: parseResult.education_list.map((education: any) => ({
-          school: education.school,
-          major: education.major,
-          degree: education.degree,
-          start_date: education.start_date,
-          end_date: education.end_date,
-          qualification: education.qualification,
+        education_list: (parseResult.education_list || []).map((education: any) => ({
+          school: education.school || '',
+          major: education.major || '',
+          degree: education.degree || '',
+          start_date: education.start_date || '',
+          end_date: education.end_date || '',
+          qualification: education.qualification || '',
         })),
-        career_list: parseResult.career_list.map((career: any) => ({
-          type_str: career.type_str,
-          company: career.company,
-          title: career.title,
-          start_date: career.start_date,
-          end_date: career.end_date,
-          job_description: career.job_description,
+        career_list: (parseResult.career_list || []).map((career: any) => ({
+          type_str: career.type_str || '',
+          company: career.company || '',
+          title: career.title || '',
+          start_date: career.start_date || '',
+          end_date: career.end_date || '',
+          job_description: career.job_description || '',
         })),
-        language_list: parseResult.language_list.map((language: any) => ({
-          language: language.language,
-          level: language.level,
-          description: language.description,
+        language_list: (parseResult.language_list || []).map((language: any) => ({
+          language: language.language || '',
+          level: language.level || '',
+          description: language.description || '',
         })),
-        certificate_list: parseResult.certificate_list.map(
+        certificate_list: (parseResult.certificate_list || []).map(
           (certificate: any) => ({
-            name: certificate.name,
-            desc: certificate.desc,
+            name: certificate.name || '',
+            desc: certificate.desc || '',
           }),
         ),
-        competition_list: parseResult.competition_list.map(
+        competition_list: (parseResult.competition_list || []).map(
           (competition: any) => ({
-            name: competition.name,
-            desc: competition.desc,
+            name: competition.name || '',
+            desc: competition.desc || '',
           }),
         ),
-        project_list: parseResult.project_list.map((project: any) => ({
-          name: project.name,
-          title: project.title,
-          description: project.description,
-          start_date: project.start_date,
-          end_date: project.end_date,
+        project_list: (parseResult.project_list || []).map((project: any) => ({
+          name: project.name || '',
+          title: project.title || '',
+          description: project.description || '',
+          start_date: project.start_date || '',
+          end_date: project.end_date || '',
         })),
       };
 
