@@ -6,6 +6,7 @@ import {
   CreateBitableRecordRequest,
   CreateBitableRecordResponse,
 } from './dto/feishu.dto';
+import { Readable } from 'stream';
 import { createReadStream } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -161,12 +162,10 @@ export class FeishuService {
     appToken: string,
     bitableToken: string,
   ) {
-    // 使用时间戳作为临时文件名
-    const tempFileName = `${Date.now()}-temp`;
-    const tempFilePath = join(tmpdir(), tempFileName);
+    // 将 buffer 写入临时文件并创建可读流
+    const tempFilePath = join(tmpdir(), fileName);
     writeFileSync(tempFilePath, file.buffer);
     const stream = createReadStream(tempFilePath);
-
     const client = new BaseClient({
       appToken: appToken,
       personalBaseToken: bitableToken,
@@ -185,7 +184,7 @@ export class FeishuService {
       lark.withTenantToken(bitableToken),
     );
 
-    return fileToken;
+    return fileToken; // 一串字符串 ICTLbSvFhoWB3TxwpgicgfE4ned
   }
 
   async addBitableRecord(

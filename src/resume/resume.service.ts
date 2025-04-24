@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { createReadStream } from 'fs';
 // import { FeishuService } from '../feishu/feishu.service';
 // import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
 import { TencentCloudService } from 'src/tencent-cloud/tencent-cloud.service';
@@ -65,9 +66,18 @@ export class ResumeService {
       const tableId = userBitable.tableId;
       const bitableToken = userBitable.bitableToken;
 
-      // 使用时间戳+原始文件后缀作为文件名
+      // 生成新的文件名
       const fileExtension = file.originalname.split('.').pop();
       const newFileName = `${Date.now()}.${fileExtension}`;
+
+      console.log('newFileName', newFileName);
+      const fileInfo = await this.cloudStorage.uploadFile(
+        newFileName,
+        file.buffer,
+      );
+      const fileName = fileInfo.name;
+      const fileUrl = fileInfo.url;
+      console.log('文件上传成功:', { fileName, fileUrl });
 
       console.log('开始上传文件到飞书');
       // 上传文件到飞书多维表格
