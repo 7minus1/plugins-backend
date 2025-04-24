@@ -6,7 +6,6 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { createReadStream } from 'fs';
 // import { FeishuService } from '../feishu/feishu.service';
 // import { CloudStorageService } from '../cloud-storage/cloud-storage.service';
 import { TencentCloudService } from 'src/tencent-cloud/tencent-cloud.service';
@@ -66,19 +65,9 @@ export class ResumeService {
       const tableId = userBitable.tableId;
       const bitableToken = userBitable.bitableToken;
 
-      console.log('开始上传文件到腾讯云');
-      // 生成新的文件名
+      // 使用时间戳+原始文件后缀作为文件名
       const fileExtension = file.originalname.split('.').pop();
       const newFileName = `${Date.now()}.${fileExtension}`;
-
-      console.log('newFileName', newFileName);
-      const fileInfo = await this.cloudStorage.uploadFile(
-        newFileName,
-        file.buffer,
-      );
-      const fileName = fileInfo.name;
-      const fileUrl = fileInfo.url;
-      console.log('文件上传成功:', { fileName, fileUrl });
 
       console.log('开始上传文件到飞书');
       // 上传文件到飞书多维表格
@@ -112,160 +101,39 @@ export class ResumeService {
         );
       }
 
-      console.log('开始解析简历');
-      // 解析简历
-      const parseResult = await this.cozeApi.executeResumeParser(
-        fileName,
-        fileUrl,
-      );
-      console.log('简历解析完成:', { 
-        hasResult: !!parseResult,
-        name: parseResult?.name,
-        mobile: parseResult?.mobile,
-        email: parseResult?.email
-      });
-
-      // 验证解析结果
-      if (!parseResult) {
-        throw new Error('简历解析失败：未能获取解析结果');
-      }
-
-      console.log('开始处理解析结果');
-      const parsedResume: ResumeParserDto = {
-        name: parseResult.name || '',
-        mobile: parseResult.mobile || '',
-        gender: parseResult.gender ?? -1,
-        email: parseResult.email || '',
-        work_year: parseResult.work_year ?? 0,
-        home_location: parseResult.home_location || '',
-        self_evaluation: parseResult.self_evaluation || '',
-        willing_location_list: parseResult.willing_location_list || [],
-        willing_position_list: parseResult.willing_position_list || [],
-        social_links: parseResult.social_links || [],
-        date_of_birth: parseResult.date_of_birth || '',
-        current_location: parseResult.current_location || '',
-        new_content: parseResult.new_content || '',
-        award_list: (parseResult.award_list || []).map((award: any) => ({
-          award: award.award || '',
-          date: award.date || '',
-          description: award.description || '',
-        })),
-        education_list: (parseResult.education_list || []).map((education: any) => ({
-          school: education.school || '',
-          major: education.major || '',
-          degree: education.degree || '',
-          start_date: education.start_date || '',
-          end_date: education.end_date || '',
-          qualification: education.qualification || '',
-        })),
-        career_list: (parseResult.career_list || []).map((career: any) => ({
-          type_str: career.type_str || '',
-          company: career.company || '',
-          title: career.title || '',
-          start_date: career.start_date || '',
-          end_date: career.end_date || '',
-          job_description: career.job_description || '',
-        })),
-        language_list: (parseResult.language_list || []).map((language: any) => ({
-          language: language.language || '',
-          level: language.level || '',
-          description: language.description || '',
-        })),
-        certificate_list: (parseResult.certificate_list || []).map(
-          (certificate: any) => ({
-            name: certificate.name || '',
-            desc: certificate.desc || '',
-          }),
-        ),
-        competition_list: (parseResult.competition_list || []).map(
-          (competition: any) => ({
-            name: competition.name || '',
-            desc: competition.desc || '',
-          }),
-        ),
-        project_list: (parseResult.project_list || []).map((project: any) => ({
-          name: project.name || '',
-          title: project.title || '',
-          description: project.description || '',
-          start_date: project.start_date || '',
-          end_date: project.end_date || '',
-        })),
-      };
-      console.log('解析结果处理完成');
-
       // 添加数据到飞书表格
       try {
         console.log('开始添加数据到飞书表格');
+        
+        // 检查必要参数
+        if (!appToken || !tableId || !bitableToken) {
+          console.error('缺少必要参数:', { appToken, tableId, bitableToken });
+          throw new Error('缺少必要参数');
+        }
+
+        // 检查文件token
+        if (!fileToken) {
+          console.error('文件token为空');
+          throw new Error('文件上传失败');
+        }
+
         // 打印请求数据，方便调试
         console.log('飞书表格请求数据:', {
           appToken,
           tableId,
-          fields: {
-            file_url: [fileToken],
-            name: parsedResume.name || '',
-            mobile: parsedResume.mobile,
-            email: parsedResume.email,
-            gender: parsedResume.gender.toString() || '0',
-            work_year: parsedResume.work_year?.toString() || '0',
-            home_location: parsedResume.home_location,
-            self_evaluation: parsedResume.self_evaluation,
-            willing_location_list: JSON.stringify(
-              parsedResume.willing_location_list,
-            ),
-            willing_position_list: JSON.stringify(
-              parsedResume.willing_position_list,
-            ),
-            social_links: JSON.stringify(parsedResume.social_links),
-            date_of_birth: parsedResume.date_of_birth,
-            current_location: parsedResume.current_location,
-            new_content: parsedResume.new_content,
-            award_list: JSON.stringify(parsedResume.award_list),
-            language_list: JSON.stringify(parsedResume.language_list),
-            certificate_list: JSON.stringify(parsedResume.certificate_list),
-            competition_list: JSON.stringify(parsedResume.competition_list),
-            career_list: JSON.stringify(parsedResume.career_list),
-            education_list: JSON.stringify(parsedResume.education_list),
-            project_list: JSON.stringify(parsedResume.project_list),
-          },
+          bitableToken,
+          fileToken,
         });
 
-        const feishuResponse = await this.feishuService.addBitableRecord(
+        const feishuResponse = await this.feishuService.addFileRecord(
           appToken,
           tableId,
           bitableToken,
-          {
-            fields: {
-              file_url: [fileToken],
-              name: parsedResume.name || '',
-              mobile: parsedResume.mobile,
-              email: parsedResume.email,
-              gender: parsedResume.gender.toString() || '0',
-              work_year: parsedResume.work_year?.toString() || '0',
-              home_location: parsedResume.home_location,
-              self_evaluation: parsedResume.self_evaluation,
-              willing_location_list: JSON.stringify(
-                parsedResume.willing_location_list,
-              ),
-              willing_position_list: JSON.stringify(
-                parsedResume.willing_position_list,
-              ),
-              social_links: JSON.stringify(parsedResume.social_links),
-              date_of_birth: parsedResume.date_of_birth,
-              current_location: parsedResume.current_location,
-              new_content: parsedResume.new_content,
-              award_list: JSON.stringify(parsedResume.award_list),
-              language_list: JSON.stringify(parsedResume.language_list),
-              certificate_list: JSON.stringify(parsedResume.certificate_list),
-              competition_list: JSON.stringify(parsedResume.competition_list),
-              career_list: JSON.stringify(parsedResume.career_list),
-              education_list: JSON.stringify(parsedResume.education_list),
-              project_list: JSON.stringify(parsedResume.project_list),
-            },
-          },
+          fileToken,
         );
         console.log('飞书表格数据添加成功:', feishuResponse);
 
-        if (!feishuResponse || !feishuResponse.recordId) {
+        if (!feishuResponse || !feishuResponse.record?.record_id) {
           throw new Error('飞书表格响应数据格式错误');
         }
 
@@ -278,7 +146,7 @@ export class ResumeService {
         return {
           message: '简历上传成功',
           data: {
-            recordId: feishuResponse.recordId,
+            recordId: feishuResponse.record.record_id,
             fileName: file.originalname,
           },
           remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
@@ -289,10 +157,18 @@ export class ResumeService {
           response: error.response?.data,
           status: error.response?.status,
           headers: error.response?.headers,
+          stack: error.stack,
         });
         
         // 根据不同的错误类型返回不同的错误信息
         if (error.response?.status === 400) {
+          // 检查是否是飞书验证失败
+          if (error.response?.data?.code === 9499) {
+            throw new HttpException(
+              '飞书多维表格验证失败，请检查多维表格配置是否正确',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
           throw new HttpException(
             `添加飞书表格数据失败: ${error.response?.data?.msg || '请求参数错误'}`,
             HttpStatus.BAD_REQUEST,
