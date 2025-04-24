@@ -38,6 +38,7 @@ export class ResumeController {
     @UploadedFile() file: Express.Multer.File,
     @Request() req,
   ) {
+    console.log('开始上传简历');
     return this.resumeService.processResume(file, req.user.userId);
   }
 }

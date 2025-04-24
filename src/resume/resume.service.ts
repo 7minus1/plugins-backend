@@ -3,6 +3,8 @@ import {
   Inject,
   forwardRef,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { createReadStream } from 'fs';
 // import { FeishuService } from '../feishu/feishu.service';
@@ -29,11 +31,13 @@ export class ResumeService {
   ) {}
 
   async processResume(file: Express.Multer.File, userId: number) {
+    console.log('开始处理简历上传请求');
     // 获取用户信息
     const user = await this.usersService.findById(userId);
     if (!user) {
       throw new Error('用户不存在');
     }
+    console.log('用户信息获取成功:', { userId, isVip: user.isVip, uploadCount: user.uploadCount });
 
     // 检查用户是否是会员
     if (!user.isVip) {
@@ -46,17 +50,23 @@ export class ResumeService {
     }
 
     try {
+      console.log('开始获取用户bitable信息');
       // 获取用户的bitable信息
       const userBitable = await this.usersService.getBitableInfo(userId);
       if (!userBitable) {
         throw new Error('请先配置多维表格信息');
       }
+      console.log('用户bitable信息获取成功:', { 
+        appToken: userBitable.bitableUrl.split('?')[0].split('/').pop(),
+        tableId: userBitable.tableId 
+      });
 
       // 解析得到apptoken
       const appToken = userBitable.bitableUrl.split('?')[0].split('/').pop();
       const tableId = userBitable.tableId;
       const bitableToken = userBitable.bitableToken;
 
+      console.log('开始上传文件到腾讯云');
       // 生成新的文件名
       const fileExtension = file.originalname.split('.').pop();
       const newFileName = `${Date.now()}.${fileExtension}`;
@@ -68,27 +78,59 @@ export class ResumeService {
       );
       const fileName = fileInfo.name;
       const fileUrl = fileInfo.url;
+      console.log('文件上传成功:', { fileName, fileUrl });
 
+      console.log('开始上传文件到飞书');
       // 上传文件到飞书多维表格
-      const fileToken = await this.feishuService.uploadFile(
-        file,
-        newFileName,
-        appToken,
-        bitableToken,
-      );
-      console.log('fileToken', fileToken);
+      let fileToken;
+      try {
+        fileToken = await this.feishuService.uploadFile(
+          file,
+          newFileName,
+          appToken,
+          bitableToken,
+        );
+        console.log('文件上传到飞书成功:', { fileToken });
+      } catch (error) {
+        console.error('飞书文件上传失败:', {
+          error: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
+        
+        // 检查是否是飞书验证失败
+        if (error.response?.status === 400 && error.response?.data?.code === 9499) {
+          throw new HttpException(
+            '飞书多维表格验证失败，请检查多维表格配置是否正确',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        
+        throw new HttpException(
+          `飞书文件上传失败: ${error.response?.data?.msg || error.message}`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
 
+      console.log('开始解析简历');
       // 解析简历
       const parseResult = await this.cozeApi.executeResumeParser(
         fileName,
         fileUrl,
       );
+      console.log('简历解析完成:', { 
+        hasResult: !!parseResult,
+        name: parseResult?.name,
+        mobile: parseResult?.mobile,
+        email: parseResult?.email
+      });
 
       // 验证解析结果
       if (!parseResult) {
         throw new Error('简历解析失败：未能获取解析结果');
       }
 
+      console.log('开始处理解析结果');
       const parsedResume: ResumeParserDto = {
         name: parseResult.name || '',
         mobile: parseResult.mobile || '',
@@ -149,12 +191,15 @@ export class ResumeService {
           end_date: project.end_date || '',
         })),
       };
+      console.log('解析结果处理完成');
 
-      const feishuResponse = await this.feishuService.addBitableRecord(
-        appToken,
-        tableId,
-        bitableToken,
-        {
+      // 添加数据到飞书表格
+      try {
+        console.log('开始添加数据到飞书表格');
+        // 打印请求数据，方便调试
+        console.log('飞书表格请求数据:', {
+          appToken,
+          tableId,
           fields: {
             file_url: [fileToken],
             name: parsedResume.name || '',
@@ -182,20 +227,88 @@ export class ResumeService {
             education_list: JSON.stringify(parsedResume.education_list),
             project_list: JSON.stringify(parsedResume.project_list),
           },
-        },
-      );
+        });
 
-      // 只有在整个流程成功完成后，才增加上传次数
-      if (!user.isVip) {
-        user.uploadCount += 1;
-        await this.usersService.update(user.id, user);
+        const feishuResponse = await this.feishuService.addBitableRecord(
+          appToken,
+          tableId,
+          bitableToken,
+          {
+            fields: {
+              file_url: [fileToken],
+              name: parsedResume.name || '',
+              mobile: parsedResume.mobile,
+              email: parsedResume.email,
+              gender: parsedResume.gender.toString() || '0',
+              work_year: parsedResume.work_year?.toString() || '0',
+              home_location: parsedResume.home_location,
+              self_evaluation: parsedResume.self_evaluation,
+              willing_location_list: JSON.stringify(
+                parsedResume.willing_location_list,
+              ),
+              willing_position_list: JSON.stringify(
+                parsedResume.willing_position_list,
+              ),
+              social_links: JSON.stringify(parsedResume.social_links),
+              date_of_birth: parsedResume.date_of_birth,
+              current_location: parsedResume.current_location,
+              new_content: parsedResume.new_content,
+              award_list: JSON.stringify(parsedResume.award_list),
+              language_list: JSON.stringify(parsedResume.language_list),
+              certificate_list: JSON.stringify(parsedResume.certificate_list),
+              competition_list: JSON.stringify(parsedResume.competition_list),
+              career_list: JSON.stringify(parsedResume.career_list),
+              education_list: JSON.stringify(parsedResume.education_list),
+              project_list: JSON.stringify(parsedResume.project_list),
+            },
+          },
+        );
+        console.log('飞书表格数据添加成功:', feishuResponse);
+
+        if (!feishuResponse || !feishuResponse.recordId) {
+          throw new Error('飞书表格响应数据格式错误');
+        }
+
+        // 只有在整个流程成功完成后，才增加上传次数
+        if (!user.isVip) {
+          user.uploadCount += 1;
+          await this.usersService.update(user.id, user);
+        }
+
+        return {
+          message: '简历上传成功',
+          data: {
+            recordId: feishuResponse.recordId,
+            fileName: file.originalname,
+          },
+          remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
+        };
+      } catch (error) {
+        console.error('添加飞书表格数据失败:', {
+          error: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers,
+        });
+        
+        // 根据不同的错误类型返回不同的错误信息
+        if (error.response?.status === 400) {
+          throw new HttpException(
+            `添加飞书表格数据失败: ${error.response?.data?.msg || '请求参数错误'}`,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        
+        throw new HttpException(
+          `添加飞书表格数据失败: ${error.response?.data?.msg || error.message}`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
-
-      return {
-        ...feishuResponse,
-        remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
-      };
     } catch (error) {
+      console.error('简历处理过程中出现错误:', {
+        error: error.message,
+        stack: error.stack,
+      });
       // 如果过程中出现任何错误，直接抛出，不增加上传次数
       throw error;
     }
