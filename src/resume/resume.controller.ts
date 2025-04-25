@@ -5,10 +5,12 @@ import {
   UseInterceptors,
   UseGuards,
   Request,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ResumeService } from './resume.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateResumeDto } from './dto/create-resume.dto';
 
 @Controller('resume')
 export class ResumeController {
@@ -37,8 +39,8 @@ export class ResumeController {
   async uploadResume(
     @UploadedFile() file: Express.Multer.File,
     @Request() req,
+    @Body() createResumeDto: CreateResumeDto,
   ) {
-    console.log('开始上传简历');
-    return this.resumeService.processResume(file, req.user.userId);
+    return this.resumeService.processResume(file, req.user.userId, createResumeDto);
   }
 }

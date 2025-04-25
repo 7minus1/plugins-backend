@@ -30,7 +30,7 @@ export class ResumeService {
     private readonly configService: ConfigService,
   ) {}
 
-  async processResume(file: Express.Multer.File, userId: number) {
+  async processResume(file: Express.Multer.File, userId: number, createResumeDto: CreateResumeDto) {
     console.log('开始处理简历上传请求');
     // 获取用户信息
     const user = await this.usersService.findById(userId);
@@ -84,11 +84,11 @@ export class ResumeService {
       let fileToken;
       try {
         fileToken = await this.feishuService.uploadFile(
-          file,
-          newFileName,
-          appToken,
-          bitableToken,
-        );
+        file,
+        newFileName,
+        appToken,
+        bitableToken,
+      );
         console.log('文件上传到飞书成功:', { fileToken });
       } catch (error) {
         console.error('飞书文件上传失败:', {
@@ -133,13 +133,19 @@ export class ResumeService {
           tableId,
           bitableToken,
           fileToken,
+          deliveryChannel: createResumeDto.deliveryChannel,
+          deliveryPosition: createResumeDto.deliveryPosition,
         });
 
         const feishuResponse = await this.feishuService.addFileRecord(
-          appToken,
-          tableId,
-          bitableToken,
+        appToken,
+        tableId,
+        bitableToken,
           fileToken,
+          {
+            deliveryChannel: createResumeDto.deliveryChannel,
+            deliveryPosition: createResumeDto.deliveryPosition,
+          }
         );
         console.log('飞书表格数据添加成功:', feishuResponse);
 
@@ -147,20 +153,22 @@ export class ResumeService {
           throw new Error('飞书表格响应数据格式错误');
         }
 
-        // 只有在整个流程成功完成后，才增加上传次数
-        if (!user.isVip) {
-          user.uploadCount += 1;
-          await this.usersService.update(user.id, user);
-        }
+      // 只有在整个流程成功完成后，才增加上传次数
+      if (!user.isVip) {
+        user.uploadCount += 1;
+        await this.usersService.update(user.id, user);
+      }
 
-        return {
+      return {
           message: '简历上传成功',
           data: {
             recordId: feishuResponse.record.record_id,
             fileName: file.originalname,
+            deliveryChannel: createResumeDto.deliveryChannel,
+            deliveryPosition: createResumeDto.deliveryPosition,
           },
-          remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
-        };
+        remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
+      };
       } catch (error) {
         console.error('添加飞书表格数据失败:', {
           error: error.message,
@@ -191,12 +199,11 @@ export class ResumeService {
         );
       }
     } catch (error) {
-      console.error('简历处理过程中出现错误:', {
-        error: error.message,
-        stack: error.stack,
-      });
-      // 如果过程中出现任何错误，直接抛出，不增加上传次数
-      throw error;
+      console.error('简历处理失败:', error);
+      throw new HttpException(
+        error.message || '简历处理失败',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
