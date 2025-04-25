@@ -1,12 +1,16 @@
 import { AwardItemDto } from './resume.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateResumeDto {
-  @ApiProperty({ description: '应聘职位', required: true })
-  @IsNotEmpty()
+  @ApiProperty({ description: '投递岗位', required: true })
   @IsString()
-  readonly position: string;
+  @IsNotEmpty()
+  deliveryPosition: string;
+
+  @IsString()
+  @IsNotEmpty()
+  deliveryChannel: string;
 
   readonly fileUrl?: string;
   readonly fileName?: string;

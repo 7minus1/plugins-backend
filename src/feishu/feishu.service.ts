@@ -353,6 +353,10 @@ export class FeishuService {
     tableId: string,
     bitableToken: string,
     fileToken: string,
+    additionalFields?: {
+      deliveryChannel: string;
+      deliveryPosition: string;
+    }
   ) {
     try {
       const client = new BaseClient({
@@ -360,15 +364,24 @@ export class FeishuService {
         personalBaseToken: bitableToken,
       });
 
+      // 增加投递时间，写毫秒级时间戳
+      const fields: Record<string, any> = {
+        '简历文件': [fileToken],
+        '投递时间': new Date().getTime(),
+      };
+
+      if (additionalFields) {
+        fields['投递渠道'] = additionalFields.deliveryChannel;
+        fields['求职岗位'] = additionalFields.deliveryPosition;
+      }
+
       const response = await client.base.appTableRecord.create(
         {
           path: {
             table_id: tableId,
           },
           data: {
-            fields: {
-              [FIELD_NAME_MAP['file_url']]: [fileToken],
-            },
+            fields,
           },
         },
         lark.withTenantToken(bitableToken),
