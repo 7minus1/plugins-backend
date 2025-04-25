@@ -42,7 +42,7 @@ export class UsersService {
   // 获取免费上传次数限制
   private getFreeUploadLimit(): number {
     return parseInt(
-      this.configService.get<string>('FREE_UPLOAD_LIMIT', '5'),
+      this.configService.get<string>('FREE_UPLOAD_LIMIT', '20'),
       10,
     );
   }
