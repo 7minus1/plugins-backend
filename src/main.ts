@@ -23,6 +23,7 @@ async function bootstrap() {
     origin: [
       'https://lpt.liepin.com',
       'https://exmail.qq.com',
+      'https://www.zhipin.com',
       /^chrome-extension:\/\/.*$/,
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

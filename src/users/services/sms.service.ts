@@ -41,7 +41,14 @@ export class SmsService {
       console.log(this.client);
 
       const result = await this.client.SendSms(params);
-      return result.SendStatusSet[0].Code === 'Ok';
+      console.log(result);
+      
+      // 如果code不是ok，返回错误，错误信息
+      if (result.SendStatusSet[0].Code !== 'Ok') {
+        throw new Error(result.SendStatusSet[0].Message);
+      }
+      return true;
+      
     } catch (error) {
       console.error('发送短信失败:', error);
       return false;

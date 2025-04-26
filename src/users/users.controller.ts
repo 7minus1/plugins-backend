@@ -6,9 +6,10 @@ import {
   UseGuards,
   Request,
   Put,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   ApiTags,
@@ -25,24 +26,36 @@ import { SendVerificationCodeDto, VerifyCodeDto } from './dto/phone-login.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post('register')
-  @ApiOperation({ summary: '用户注册' })
-  @ApiResponse({ status: 201, description: '注册成功' })
-  @ApiResponse({ status: 409, description: '手机号已被注册或用户名已存在' })
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @Post('send-verification-code')
+  @ApiOperation({ summary: '发送验证码' })
+  @ApiResponse({ status: 200, description: '发送成功' })
+  @ApiResponse({ status: 400, description: '发送失败' })
+  async sendVerificationCode(@Body() dto: SendVerificationCodeDto) {
+    const result = await this.usersService.sendVerificationCode(dto.phoneNumber);
+    if (!result.success) {
+      if (result.codeExists) {
+        throw new HttpException('验证码已发送，请注意查收', HttpStatus.BAD_REQUEST);    // 验证码发送过于频繁
+      } else {
+        throw new HttpException('验证码发送失败', HttpStatus.BAD_REQUEST);
+      }
+    }
+    return { message: '验证码发送成功' };
   }
 
-  @Post('login')
-  @ApiOperation({ summary: '用户登录' })
+  @Post('verify-code')
+  @ApiOperation({ summary: '验证码登录' })
   @ApiResponse({ status: 200, description: '登录成功' })
-  @ApiResponse({ status: 401, description: '手机号或密码错误' })
-  async login(@Body() loginDto: { phoneNumber: string; password: string }) {
-    const user = await this.usersService.validateUser(
-      loginDto.phoneNumber,
-      loginDto.password,
+  @ApiResponse({ status: 400, description: '验证码错误' })
+  async verifyCode(@Body() dto: VerifyCodeDto) {
+    // 验证验证码，注意：如果Redis中没有找到验证码记录，固定验证码123456也可用于登录/注册
+    const isValid = await this.usersService.verifyCode(
+      dto.phoneNumber,
+      dto.code,
     );
-    return this.usersService.login(user);
+    if (!isValid) {
+      throw new HttpException('验证码错误或已过期', HttpStatus.BAD_REQUEST);
+    }
+    return this.usersService.loginOrRegisterWithPhone(dto.phoneNumber);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -79,33 +92,6 @@ export class UsersController {
     return this.usersService.getBitableInfo(req.user.userId);
   }
 
-  @Post('send-verification-code')
-  @ApiOperation({ summary: '发送验证码' })
-  @ApiResponse({ status: 200, description: '发送成功' })
-  @ApiResponse({ status: 400, description: '发送失败' })
-  async sendVerificationCode(@Body() dto: SendVerificationCodeDto) {
-    const sent = await this.usersService.sendVerificationCode(dto.phoneNumber);
-    if (!sent) {
-      throw new Error('验证码发送失败');
-    }
-    return { message: '验证码发送成功' };
-  }
-
-  @Post('verify-code')
-  @ApiOperation({ summary: '验证码登录' })
-  @ApiResponse({ status: 200, description: '登录成功' })
-  @ApiResponse({ status: 400, description: '验证码错误' })
-  async verifyCode(@Body() dto: VerifyCodeDto) {
-    const isValid = await this.usersService.verifyCode(
-      dto.phoneNumber,
-      dto.code,
-    );
-    if (!isValid) {
-      throw new Error('验证码错误或已过期');
-    }
-    return this.usersService.loginOrRegisterWithPhone(dto.phoneNumber);
-  }
-
   @Post('test-sms')
   @ApiOperation({ summary: '测试发送短信' })
   @ApiResponse({ status: 200, description: '发送成功' })
@@ -113,7 +99,7 @@ export class UsersController {
   async testSms(@Body() dto: SendVerificationCodeDto) {
     const result = await this.usersService.testSendSms(dto.phoneNumber);
     if (!result.success) {
-      throw new Error('短信发送失败，请检查配置');
+      throw new HttpException('短信发送失败，请检查配置', HttpStatus.BAD_REQUEST);
     }
     return {
       message: '短信发送成功',

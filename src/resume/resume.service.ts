@@ -41,8 +41,9 @@ export class ResumeService {
 
     // 检查用户是否是会员
     if (!user.isVip) {
+      console.log(this.configService.get('FREE_UPLOAD_LIMIT'));
       // 检查上传次数是否超过限制
-      if (user.uploadCount >= 5) {
+      if (user.uploadCount >= this.configService.get('FREE_UPLOAD_LIMIT')) {
         throw new ForbiddenException(
           '非会员用户上传次数已达上限，请升级为会员继续使用',
         );
