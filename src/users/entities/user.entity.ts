@@ -20,9 +20,6 @@ export class User {
   @Column({ unique: true, nullable: true })
   phoneNumber: string;
 
-  @Column({ nullable: true })
-  password: string;
-
   @Column({ default: true })
   isActive: boolean;
 

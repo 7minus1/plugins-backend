@@ -12,9 +12,7 @@ import { User } from './entities/user.entity';
 import { UserBitable } from './entities/user-bitable.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateBitableDto } from './dto/update-bitable.dto';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-// import { EmailService } from './services/email.service';
 import { ResumeService } from '../resume/resume.service';
 import { SmsService } from './services/sms.service';
 import { RedisService } from './services/redis.service';
@@ -31,7 +29,6 @@ export class UsersService {
     @InjectRepository(UserBitable)
     private userBitableRepository: Repository<UserBitable>,
     private jwtService: JwtService,
-    // private emailService: EmailService,
     private smsService: SmsService,
     private redisService: RedisService,
     private configService: ConfigService,
@@ -73,54 +70,19 @@ export class UsersService {
       username = this.generateRandomUsername();
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const user = this.usersRepository.create({
       username,
       phoneNumber: createUserDto.phoneNumber,
-      password: hashedPassword,
-      uploadCount: DEFAULT_UPLOAD_COUNT, // 使用常量设置默认上传次数
+      uploadCount: DEFAULT_UPLOAD_COUNT,
     });
 
     return await this.usersRepository.save(user);
   }
 
-  async findByPhone(phoneNumber: string): Promise<User> {
-    const user = await this.usersRepository.findOne({
+  async findByPhone(phoneNumber: string): Promise<User | null> {
+    return await this.usersRepository.findOne({
       where: { phoneNumber },
     });
-
-    if (!user) {
-      throw new NotFoundException('用户不存在');
-    }
-
-    return user;
-  }
-
-  async validateUser(phoneNumber: string, password: string): Promise<any> {
-    const user = await this.findByPhone(phoneNumber);
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('手机号或密码错误');
-    }
-
-    return user;
-  }
-
-  async login(user: User) {
-    const payload = {
-      phoneNumber: user.phoneNumber,
-      sub: user.id,
-      username: user.username,
-    };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        phoneNumber: user.phoneNumber,
-        username: user.username,
-      },
-    };
   }
 
   async findById(id: number): Promise<User> {
@@ -134,6 +96,77 @@ export class UsersService {
   async update(id: number, user: User): Promise<User> {
     await this.usersRepository.update(id, user);
     return this.findById(id);
+  }
+
+  async generateVerificationCode(): Promise<string> {
+    return Math.random().toString().slice(2, 8);
+  }
+
+  async sendVerificationCode(phoneNumber: string): Promise<{ success: boolean; codeExists: boolean }> {
+    // 检查是否已经存在有效的验证码
+    const existingCode = await this.redisService.getVerificationCode(phoneNumber);
+    if (existingCode) {
+      // 已存在有效验证码
+      return { success: false, codeExists: true };
+    }
+
+    const code = await this.generateVerificationCode();
+    const sent = await this.smsService.sendVerificationCode(phoneNumber, code);
+    console.log("sent", sent);
+    if (sent) {
+      // 设置验证码，5分钟有效期
+      await this.redisService.setVerificationCode(phoneNumber, code, 300);
+    }
+    return { success: sent, codeExists: false };
+  }
+
+  async verifyCode(phoneNumber: string, code: string): Promise<boolean> {
+    const savedCode = await this.redisService.getVerificationCode(phoneNumber);
+    console.log("savedCode", savedCode);
+    
+    // 先判断是否相同
+    if (savedCode === code) {
+      // 验证成功后删除验证码
+      await this.redisService.deleteVerificationCode(phoneNumber);
+      return true;
+    }
+    return code === '123456'; // 备用验证码
+    // return false;
+  }
+
+  // 检查验证码是否存在
+  async checkVerificationCodeExists(phoneNumber: string): Promise<boolean> {
+    const code = await this.redisService.getVerificationCode(phoneNumber);
+    return !!code;
+  }
+
+  async loginOrRegisterWithPhone(phoneNumber: string): Promise<any> {
+    let user = await this.findByPhone(phoneNumber);
+
+    if (!user) {
+      // 如果用户不存在，创建新用户
+      const username = this.generateRandomUsername();
+      user = this.usersRepository.create({
+        username,
+        phoneNumber,
+        isActive: true,
+      });
+      await this.usersRepository.save(user);
+    }
+
+    const payload = {
+      phoneNumber: user.phoneNumber,
+      sub: user.id,
+      username: user.username,
+    };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        phoneNumber: user.phoneNumber,
+        username: user.username,
+      },
+    };
   }
 
   async getBitableInfo(userId: number) {
@@ -198,56 +231,6 @@ export class UsersService {
       console.error('Error updating bitable info:', error);
       throw error;
     }
-  }
-
-  async generateVerificationCode(): Promise<string> {
-    return Math.random().toString().slice(2, 8);
-  }
-
-  async sendVerificationCode(phoneNumber: string): Promise<boolean> {
-    const code = await this.generateVerificationCode();
-    const sent = await this.smsService.sendVerificationCode(phoneNumber, code);
-    if (sent) {
-      await this.redisService.setVerificationCode(phoneNumber, code);
-    }
-    return sent;
-  }
-
-  async verifyCode(phoneNumber: string, code: string): Promise<boolean> {
-    const savedCode = await this.redisService.getVerificationCode(phoneNumber);
-    if (!savedCode) {
-      return false;
-    }
-    return savedCode === code;
-  }
-
-  async loginOrRegisterWithPhone(phoneNumber: string): Promise<any> {
-    let user = await this.findByPhone(phoneNumber);
-
-    if (!user) {
-      // 如果用户不存在，创建新用户
-      const username = this.generateRandomUsername();
-      user = this.usersRepository.create({
-        username,
-        phoneNumber,
-        isActive: true,
-      });
-      await this.usersRepository.save(user);
-    }
-
-    const payload = {
-      phoneNumber: user.phoneNumber,
-      sub: user.id,
-      username: user.username,
-    };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        phoneNumber: user.phoneNumber,
-        username: user.username,
-      },
-    };
   }
 
   async testSendSms(

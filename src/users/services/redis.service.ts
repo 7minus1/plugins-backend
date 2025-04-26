@@ -14,9 +14,13 @@ export class RedisService {
     });
   }
 
-  async setVerificationCode(phoneNumber: string, code: string): Promise<void> {
+  async setVerificationCode(
+    phoneNumber: string,
+    code: string,
+    expireSeconds: number = 300,
+  ): Promise<void> {
     const key = `verification_code:${phoneNumber}`;
-    await this.client.set(key, code, 'EX', 300); // 5分钟有效期
+    await this.client.set(key, code, 'EX', expireSeconds);
   }
 
   async getVerificationCode(phoneNumber: string): Promise<string | null> {
