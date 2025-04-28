@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as lark from '@larksuiteoapi/node-sdk';
@@ -369,6 +370,7 @@ export class FeishuService {
         '投递时间': new Date().getTime(),
       };
 
+      console.log('fields', fields);
       if (additionalFields) {
         fields['投递渠道'] = additionalFields.deliveryChannel;
         fields['求职岗位'] = additionalFields.deliveryPosition;
@@ -399,9 +401,31 @@ export class FeishuService {
 
 
   async uploadOnlineImage(fileName: string, imageUrl: string, appToken: string, bitableToken: string) {
-    const imageArrayBuffer = await fetch(imageUrl).then(res => res.arrayBuffer());
-    const imageBuffer = Buffer.from(imageArrayBuffer);
+    // const cleanUrl = imageUrl.split('?')[0];
+    // const imageArrayBuffer = await fetch(cleanUrl).then(res => res.arrayBuffer());
+    // const imageArrayBuffer = await fetch(imageUrl, {
+    //   headers: {
+    //     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    //     'Referer': 'https://www.zhipin.com/'
+    //   }
+    // }).then(res => res.arrayBuffer())
+    // .catch(err => {
+    //   console.error('上传图片失败:', err);
+    //   throw err;
+    // });
+    // const imageBuffer = Buffer.from(imageArrayBuffer);
     
+    const response = await axios.get(imageUrl, {
+      responseType: 'arraybuffer',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': 'https://img.bosszhipin.com/',
+        'Accept': 'image/jpeg,image/png,image/*,image/webp'
+      }
+    });
+    
+    const imageBuffer = Buffer.from(response.data);
+
     const client = new BaseClient({
       appToken: appToken,
       personalBaseToken: bitableToken,
@@ -444,23 +468,50 @@ export class FeishuService {
         }
       }
 
-      // 处理公司LOGO
-      if (companyInfo.logo) {
-        console.log('companyInfo.logo', companyInfo.logo);
-        // 使用uploadOnlineImage上传图片获取fileToken
-        const logoFileName = `${companyInfo.short_name}_logo.jpg`;
-        const fileToken = await this.uploadOnlineImage(logoFileName, companyInfo.logo, appToken, bitableToken);
-        chineseFields['公司 LOGO'] = [fileToken];
-      }
-      console.log('chineseFields', chineseFields['公司 LOGO']);
-      
-      // 公司相册是数组，需要遍历
-      // if (companyInfo.photo_album) {
-      //   // 文件命名: 公司名称_图片序号.jpg
-      //   chineseFields['公司相册'] = companyInfo.photo_album.map((photo, index) => this.uploadOnlineImage(`${companyInfo.short_name}_${index}.jpg`, photo, appToken, bitableToken));
+      // // 处理公司LOGO
+      // if (companyInfo.logo) {
+      //   try {
+      //     const logoFileName = `${companyInfo.short_name}_logo.jpg`;
+      //     const fileToken = await this.uploadOnlineImage(logoFileName, companyInfo.logo, appToken, bitableToken);
+      //     if (fileToken) {
+      //       chineseFields['公司 LOGO'] = [fileToken];
+      //     }
+      //   } catch (error) {
+      //     console.error('Logo上传失败，继续处理其他字段:', error);
+      //     // 设置为空数组或者存储URL字符串
+      //     chineseFields['公司 LOGO'] = []; // 或者 chineseFields['公司 LOGO'] = companyInfo.logo;
+      //   }
       // }
+      // console.log('chineseFields', chineseFields['公司 LOGO']);
+      
+      // // 公司相册是数组，需要遍历上传
+      // if (companyInfo.photo_album && Array.isArray(companyInfo.photo_album)) {
+      //   try {
+      //     // 并行上传所有图片并等待结果
+      //     const uploadPromises = companyInfo.photo_album.map((photo, index) => 
+      //       this.uploadOnlineImage(`${companyInfo.short_name}_photo_${index}.jpg`, photo, appToken, bitableToken)
+      //     );
+          
+      //     // 等待所有图片上传完成，过滤掉null值
+      //     const fileTokens = (await Promise.all(uploadPromises)).filter(token => token !== null);
+          
+      //     // 如果有成功上传的图片，添加到字段中
+      //     if (fileTokens.length > 0) {
+      //       chineseFields['公司相册'] = fileTokens;
+      //     } else {
+      //       chineseFields['公司相册'] = '';
+      //     }
+      //   } catch (error) {
+      //     console.error('公司相册上传失败:', error);
+      //     chineseFields['公司相册'] = '';
+      //   }
+      // } else {
+      //   chineseFields['公司相册'] = '';
+      // }
+      // console.log('chineseFields', chineseFields['公司相册']);
 
-      chineseFields['公司相册'] = '';
+      chineseFields['公司 LOGO'] = []
+      chineseFields['公司相册'] = []
       
       console.log(chineseFields);
       
