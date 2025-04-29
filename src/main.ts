@@ -30,6 +30,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'https://lpt.liepin.com',
+      'https://h.liepin.com',
       'https://exmail.qq.com',
       'https://www.zhipin.com',
       /^chrome-extension:\/\/.*$/,
@@ -50,6 +51,9 @@ async function bootstrap() {
   //   .build();
   // const document = SwaggerModule.createDocument(app, config);
   // SwaggerModule.setup('api', app, document);
+
+  // 打印数据库连接信息 DB_HOST
+  console.log('DB_HOST:', process.env.DB_HOST);
 
   await app.listen(process.env.PORT ?? 3000);
 }
