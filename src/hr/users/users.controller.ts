@@ -22,8 +22,8 @@ import { UpdateHrBitableDto } from './dto/update-bitable.dto';
 import { SendHrVerificationCodeDto, VerifyHrCodeDto } from './dto/phone-login.dto';
 
 @ApiTags('HR用户管理')
-// @Controller('hr/users')
-@Controller('users')
+// @Controller('users')
+@Controller('hr/users')
 export class HrUsersController {
   constructor(private readonly usersService: HrUsersService) {}
 

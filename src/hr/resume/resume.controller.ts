@@ -12,8 +12,8 @@ import { HrResumeService } from './resume.service';
 import { HrJwtAuthGuard } from '../users/guards/hr-jwt-auth.guard';
 import { CreateHrResumeDto } from './dto/create-resume.dto';
 
-// @Controller('hr/resume')
-@Controller('resume')
+// @Controller('resume')
+@Controller('hr/resume')
 export class HrResumeController {
   constructor(private readonly resumeService: HrResumeService) {}
 
