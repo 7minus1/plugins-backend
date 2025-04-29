@@ -9,7 +9,8 @@ import {
 } from 'typeorm';
 import { HrUser } from './user.entity';
 
-@Entity('hr_user_bitable') // 添加表前缀hr_
+// @Entity('hr_user_bitable') // 添加表前缀hr_
+@Entity('user_bitable') // 添加表前缀hr_
 export class HrUserBitable {
   @PrimaryGeneratedColumn()
   id: number;

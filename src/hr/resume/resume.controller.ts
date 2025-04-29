@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { HrResumeService } from './resume.service';
-import { HrJwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { HrJwtAuthGuard } from '../users/guards/hr-jwt-auth.guard';
 import { CreateHrResumeDto } from './dto/create-resume.dto';
 
 // @Controller('hr/resume')

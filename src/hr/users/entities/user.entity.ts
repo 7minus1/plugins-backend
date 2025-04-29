@@ -6,7 +6,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('hr_user') // 添加表前缀hr_
+// @Entity('hr_user') // 添加表前缀hr_
+@Entity('user') // 添加表前缀hr_
 export class HrUser {
   @PrimaryGeneratedColumn()
   id: number;

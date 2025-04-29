@@ -36,6 +36,16 @@ export class HrResumeService {
 
   async processResume(file: Express.Multer.File, userId: number, createResumeDto: CreateHrResumeDto) {
     console.log('开始处理简历上传请求');
+    
+    // 验证userId参数
+    if (!userId) {
+      console.error('userId参数缺失');
+      throw new HttpException(
+        '用户ID无效，请重新登录',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    
     // 获取用户信息
     const user = await this.usersService.findById(userId);
     if (!user) {
@@ -57,14 +67,11 @@ export class HrResumeService {
     try {
       console.log('开始获取用户bitable信息');
       // 获取用户的bitable信息
+      console.log('userId', userId);
       const userBitable = await this.usersService.getBitableInfo(userId);
       if (!userBitable) {
         throw new Error('请先配置多维表格信息');
       }
-      // console.log('用户bitable信息获取成功:', { 
-      //   appToken: userBitable.bitableUrl.split('?')[0].split('/').pop(),
-      //   tableId: userBitable.tableId 
-      // });
 
       // 解析得到apptoken
       const appToken = userBitable.data.bitableUrl.split('?')[0].split('/').pop();
