@@ -51,4 +51,24 @@ export const COMPANY_FIELD_NAME_MAP = {
   registration_authority: '登记机关',
   industry_category: '所属行业',
   business_scope: '经营范围',
+} as const;
+
+// 职位信息表字段中英文映射
+export const POSITION_FIELD_NAME_MAP = {
+  position_name: '职位名称',
+  position_type: '职位类型',
+  position_location: '职位地点',
+  position_status: '职位状态',
+  salary_range: '薪资范围',
+  experience_requirement: '工作经验',
+  education_requirement: '学历要求',
+  company_benefits: '公司福利',
+  position_tags: '职位标签',
+  position_description: '职位描述',
+  position_address: '职位地址',
+  publisher_name: 'boss职位发布人',
+  publisher_avatar: 'boss职位发布人头像',
+  company_link: '公司链接',
+  company_name: '公司名称',
+  position_image: '职位详情图像',
 } as const; 

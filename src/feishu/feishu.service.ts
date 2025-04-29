@@ -12,7 +12,7 @@ import { createReadStream } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { writeFileSync } from 'fs';
-import { FIELD_NAME_MAP, COMPANY_FIELD_NAME_MAP } from '../common/constants/field-mapping';
+import { FIELD_NAME_MAP, COMPANY_FIELD_NAME_MAP, POSITION_FIELD_NAME_MAP } from '../common/constants/field-mapping';
 
 // 工具函数：格式化日期，只保留年月
 const formatDate = (dateStr: string) => {
@@ -459,6 +459,34 @@ export class FeishuService {
         personalBaseToken: bitableToken,
       });
 
+      console.log('companyInfo', companyInfo.short_name);
+      // 查找是否用同样公司简称的公司在列表中
+      const companyRecord = await client.base.appTableRecord.list(
+        {
+          path: {
+            table_id: tableId,
+          },
+          params: {
+            field_names: '["公司简称"]',
+            filter: `CurrentValue.[公司简称] = "${companyInfo.short_name}"`
+          },
+        },
+      );
+      console.log('companyRecord', companyRecord);
+      // 如果有，删除原纪录
+      // 没有记录的话没有 companyRecord.data.items, 这么写会报错
+      if (companyRecord.data.items && companyRecord.data.items.length > 0) {
+        await client.base.appTableRecord.delete(
+          {
+            path: {
+              table_id: tableId,
+              record_id: companyRecord.data.items[0].record_id,
+            },
+          },
+          lark.withTenantToken(bitableToken),
+        );
+      }
+
       // 将英文字段名转换为中文字段名
       const chineseFields: Record<string, any> = {};
       for (const [key, value] of Object.entries(companyInfo)) {
@@ -539,5 +567,81 @@ export class FeishuService {
     }
 
 
+  }
+
+  // 新增职位记录的方法
+  async addPositionRecord(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    fileToken: string,
+    positionInfo: {
+      positionName: string;
+      companyLink: string;
+      positionType?: string;
+      positionLocation?: string;
+      positionStatus?: string;
+      salaryRange?: string;
+      experienceRequirement?: string;
+      educationRequirement?: string;
+      companyBenefits?: string[];
+      positionTags?: string[];
+      positionDescription?: string;
+      positionAddress?: string;
+      publisherName?: string;
+      publisherAvatar?: string;
+      companyName?: string;
+    }
+  ) {
+    try {
+      const client = new BaseClient({
+        appToken: appToken,
+        personalBaseToken: bitableToken,
+      });
+
+      const fields: Record<string, any> = {
+        [POSITION_FIELD_NAME_MAP.position_name]: positionInfo.positionName,
+        [POSITION_FIELD_NAME_MAP.company_link]: positionInfo.companyLink,
+        [POSITION_FIELD_NAME_MAP.position_image]: [fileToken],
+      };
+
+      // 添加可选字段（如果存在）
+      if (positionInfo.positionType) fields[POSITION_FIELD_NAME_MAP.position_type] = positionInfo.positionType;
+      if (positionInfo.positionLocation) fields[POSITION_FIELD_NAME_MAP.position_location] = positionInfo.positionLocation;
+      if (positionInfo.positionStatus) fields[POSITION_FIELD_NAME_MAP.position_status] = positionInfo.positionStatus;
+      if (positionInfo.salaryRange) fields[POSITION_FIELD_NAME_MAP.salary_range] = positionInfo.salaryRange;
+      if (positionInfo.experienceRequirement) fields[POSITION_FIELD_NAME_MAP.experience_requirement] = positionInfo.experienceRequirement;
+      if (positionInfo.educationRequirement) fields[POSITION_FIELD_NAME_MAP.education_requirement] = positionInfo.educationRequirement;
+      if (positionInfo.companyBenefits && positionInfo.companyBenefits.length > 0) fields[POSITION_FIELD_NAME_MAP.company_benefits] = positionInfo.companyBenefits;
+      if (positionInfo.positionTags && positionInfo.positionTags.length > 0) fields[POSITION_FIELD_NAME_MAP.position_tags] = positionInfo.positionTags;
+      if (positionInfo.positionDescription) fields[POSITION_FIELD_NAME_MAP.position_description] = positionInfo.positionDescription;
+      if (positionInfo.positionAddress) fields[POSITION_FIELD_NAME_MAP.position_address] = positionInfo.positionAddress;
+      if (positionInfo.publisherName) fields[POSITION_FIELD_NAME_MAP.publisher_name] = positionInfo.publisherName;
+      if (positionInfo.publisherAvatar) fields[POSITION_FIELD_NAME_MAP.publisher_avatar] = positionInfo.publisherAvatar;
+      if (positionInfo.companyName) fields[POSITION_FIELD_NAME_MAP.company_name] = positionInfo.companyName;
+
+      console.log('职位表格字段:', fields);
+      
+      const response = await client.base.appTableRecord.create(
+        {
+          path: {
+            table_id: tableId,
+          },
+          data: {
+            fields,
+          },
+        },
+        lark.withTenantToken(bitableToken),
+      );
+      console.log('职位记录添加成功:', response);
+      return response.data;
+    } catch (error) {
+      console.error('添加职位记录失败:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw error;
+    }
   }
 }
