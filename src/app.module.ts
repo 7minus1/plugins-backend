@@ -3,9 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { ResumeModule } from './resume/resume.module';
-import { AuthModule } from './auth/auth.module';
+// import { UsersModule } from './users/users.module';
+// import { ResumeModule } from './resume/resume.module';
+// import { AuthModule } from './auth/auth.module';
+import { HrModule } from './hr/hr.module';
+import { JobModule } from './job/job.module';
 // import { PaymentsModule } from './payments/payments.module';
 
 @Module({
@@ -26,9 +28,11 @@ import { AuthModule } from './auth/auth.module';
         charset: 'utf8mb4_unicode_ci',
       },
     }),
-    UsersModule,
-    ResumeModule,
-    AuthModule,
+    // UsersModule,
+    // ResumeModule,
+    HrModule,
+    JobModule,
+    // AuthModule,
     // PaymentsModule,
   ],
   controllers: [AppController],
