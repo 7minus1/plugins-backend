@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { JobUser } from './entities/user.entity';
 import { JobUserCompanyBitable } from './entities/user-company-bitable.entity';
 import { JobUserPositionBitable } from './entities/user-position-bitable.entity';
+import { JobUserBitable } from './entities/user-bitable.entity';
 import { CreateJobUserDto } from './dto/create-user.dto';
 import { UpdateJobBitableDto } from './dto/update-bitable.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -28,10 +29,8 @@ export class JobUsersService {
   constructor(
     @InjectRepository(JobUser)
     private usersRepository: Repository<JobUser>,
-    @InjectRepository(JobUserCompanyBitable)
-    private userCompanyBitableRepository: Repository<JobUserCompanyBitable>,
-    @InjectRepository(JobUserPositionBitable)
-    private userPositionBitableRepository: Repository<JobUserPositionBitable>,
+    @InjectRepository(JobUserBitable)
+    private userBitableRepository: Repository<JobUserBitable>,
     private jwtService: JwtService,
     private smsService: JobSmsService,
     private redisService: JobRedisService,
@@ -170,86 +169,149 @@ export class JobUsersService {
     };
   }
 
-  // async getBitableInfo(userId: number) {
-  //   const userBitable = await this.userBitableRepository.findOne({
-  //     where: { userId },
-  //   });
-  //   if (!userBitable) {
-  //     return {
-  //       configured: false,
-  //       message: '您尚未配置多维表信息'
-  //     };
-  //   }
-  //   return {
-  //     configured: true,
-  //     data: userBitable
-  //   };
-  // }
+  // 获取用户多维表配置
+  async getBitableInfo(userId: number) {
+    const userBitable = await this.userBitableRepository.findOne({
+      where: { userId },
+    });
+    
+    if (!userBitable) {
+      return {
+        configured: false,
+        message: '您尚未配置多维表信息'
+      };
+    }
+    
+    return {
+      configured: true,
+      data: userBitable
+    };
+  }
 
-  // async updateTableId(userId: number, tableId: string) {
-  //   return this.userBitableRepository.update({ userId }, { tableId });
-  // }
-
-  private extractTableIdFromUrl(url: string): string {
+  // 更新用户多维表配置
+  async updateBitableInfo(userId: number, updateBitableDto: UpdateJobBitableDto) {
     try {
-      const urlObj = new URL(url);
-      const tableId = urlObj.searchParams.get('table');
-      if (!tableId) {
-        throw new Error('无法从URL中提取tableId');
+      const user = await this.findById(userId);
+      if (!user) {
+        throw new NotFoundException('用户不存在');
       }
-      return tableId;
+
+      // 从 URL 中提取 tableId
+      // const extractedTableId = this.extractTableIdFromUrl(updateBitableDto.bitableUrl);
+
+      // 通过查表得到三个表的ID（也能够检测多维表配置是否成功）
+      const tableIds = await this.resumeService.checkAndGetTableId(
+        updateBitableDto.bitableUrl,
+        updateBitableDto.bitableToken
+      );
+      // 如果数组为空，则多维表配置不成功
+      if (tableIds.length === 0) {
+        throw new BitableConfigException();
+      }
+
+      let userBitable = await this.userBitableRepository.findOne({
+        where: { userId },
+      });
+
+      if (!userBitable) {
+        userBitable = this.userBitableRepository.create({
+          user,
+          userId,
+          bitableUrl: updateBitableDto.bitableUrl,
+          bitableToken: updateBitableDto.bitableToken,
+          // 默认新提取的tableId作为公司表ID，其他表ID用户需要单独设置
+          positionTableId: tableIds[0],
+          companyTableId: tableIds[1],
+          resumeTableId: tableIds[2]
+        });
+      } else {
+        userBitable.bitableUrl = updateBitableDto.bitableUrl;
+        userBitable.bitableToken = updateBitableDto.bitableToken;
+        userBitable.positionTableId = tableIds[0];
+        userBitable.companyTableId = tableIds[1];
+        userBitable.resumeTableId = tableIds[2];
+      }
+
+      // 保存bitable信息
+      userBitable = await this.userBitableRepository.save(userBitable);
+      return userBitable;
     } catch (error) {
-      throw new Error('无效的飞书多维表格URL');
+      console.error('Error updating bitable info:', error);
+      throw error;
     }
   }
 
-  // async updateBitableInfo(userId: number, updateBitableDto: UpdateJobBitableDto) {
-  //   try {
-  //     const user = await this.findById(userId);
-  //     if (!user) {
-  //       throw new NotFoundException('User not found');
-  //     }
+  // 获取公司表配置
+  async getCompanyBitableInfo(userId: number) {
+    const userBitable = await this.userBitableRepository.findOne({
+      where: { userId },
+    });
+    
+    if (!userBitable || !userBitable.companyTableId) {
+      return {
+        configured: false,
+        message: '您尚未配置公司信息表'
+      };
+    }
+    
+    return {
+      configured: true,
+      data: {
+        bitableUrl: userBitable.bitableUrl,
+        bitableToken: userBitable.bitableToken,
+        tableId: userBitable.companyTableId,
+        userId: userBitable.userId
+      }
+    };
+  }
 
-  //     // 从 URL 中提取 tableId
-  //     const tableId = this.extractTableIdFromUrl(updateBitableDto.bitableUrl);
+  // 获取职位表配置
+  async getPositionBitableInfo(userId: number) {
+    const userBitable = await this.userBitableRepository.findOne({
+      where: { userId },
+    });
+    
+    if (!userBitable || !userBitable.positionTableId) {
+      return {
+        configured: false,
+        message: '您尚未配置职位信息表'
+      };
+    }
+    
+    return {
+      configured: true,
+      data: {
+        bitableUrl: userBitable.bitableUrl,
+        bitableToken: userBitable.bitableToken,
+        tableId: userBitable.positionTableId,
+        userId: userBitable.userId
+      }
+    };
+  }
 
-  //     // 检测多维表配置是否成功
-  //     const result = await this.resumeService.checkBitableConfig(
-  //       updateBitableDto.bitableUrl,
-  //       tableId,
-  //       updateBitableDto.bitableToken
-  //     );
-      
-  //     if (!result) {
-  //       throw new BitableConfigException();
-  //     }
-
-  //     let userBitable = await this.userBitableRepository.findOne({
-  //       where: { userId },
-  //     });
-
-  //     if (!userBitable) {
-  //       userBitable = this.userBitableRepository.create({
-  //         user,
-  //         userId,
-  //         bitableUrl: updateBitableDto.bitableUrl,
-  //         bitableToken: updateBitableDto.bitableToken,
-  //         tableId: tableId
-  //       });
-  //     } else {
-  //       userBitable.bitableUrl = updateBitableDto.bitableUrl;
-  //       userBitable.bitableToken = updateBitableDto.bitableToken;
-  //       userBitable.tableId = tableId;
-  //     }
-
-  //     // 保存bitable信息
-  //     userBitable = await this.userBitableRepository.save(userBitable);
-  //     return userBitable;
-  //   } catch (error) {
-  //     console.error('Error updating bitable info:', error);
-  //     throw error;
-  //   }
-  // }
+  // 获取简历表配置
+  async getResumeBitableInfo(userId: number) {
+    const userBitable = await this.userBitableRepository.findOne({
+      where: { userId },
+    });
+    
+    if (!userBitable || !userBitable.resumeTableId) {
+      return {
+        configured: false,
+        message: '您尚未配置简历信息表'
+      };
+    }
+    
+    return {
+      configured: true,
+      data: {
+        bitableUrl: userBitable.bitableUrl,
+        bitableToken: userBitable.bitableToken,
+        tableId: userBitable.resumeTableId,
+        userId: userBitable.userId
+      }
+    };
+  }
 
   async testSendSms(
     phoneNumber: string,
@@ -296,150 +358,16 @@ export class JobUsersService {
     return await this.usersRepository.save(user);
   }
 
-  async getCompanyBitableInfo(userId: number) {
-    const userBitable = await this.userCompanyBitableRepository.findOne({
-      where: { userId },
-    });
-    if (!userBitable) {
-      return {
-        configured: false,
-        message: '您尚未配置公司信息表'
-      };
-    }
-    return {
-      configured: true,
-      data: userBitable
-    };
-  }
-
-  async updateCompanyBitableInfo(userId: number, updateBitableDto: UpdateJobBitableDto) {
+  private extractTableIdFromUrl(url: string): string {
     try {
-      const user = await this.findById(userId);
-      if (!user) {
-        throw new NotFoundException('User not found');
+      const urlObj = new URL(url);
+      const tableId = urlObj.searchParams.get('table');
+      if (!tableId) {
+        throw new Error('无法从URL中提取tableId');
       }
-
-      // 从 URL 中提取 tableId
-      const tableId = this.extractTableIdFromUrl(updateBitableDto.bitableUrl);
-
-      // 检测多维表配置是否成功
-      const result = await this.resumeService.checkBitableConfig(
-        updateBitableDto.bitableUrl,
-        tableId,
-        updateBitableDto.bitableToken
-      );
-      
-      if (!result) {
-        throw new BitableConfigException();
-      }
-
-      let userBitable = await this.userCompanyBitableRepository.findOne({
-        where: { userId },
-      });
-
-      if (!userBitable) {
-        userBitable = this.userCompanyBitableRepository.create({
-          user,
-          userId,
-          bitableUrl: updateBitableDto.bitableUrl,
-          bitableToken: updateBitableDto.bitableToken,
-          tableId: tableId
-        });
-      } else {
-        userBitable.bitableUrl = updateBitableDto.bitableUrl;
-        userBitable.bitableToken = updateBitableDto.bitableToken;
-        userBitable.tableId = tableId;
-      }
-
-      // 保存bitable信息
-      userBitable = await this.userCompanyBitableRepository.save(userBitable);
-      return userBitable;
+      return tableId;
     } catch (error) {
-      console.error('Error updating company bitable info:', error);
-      throw error;
+      throw new Error('无效的飞书多维表格URL');
     }
-  }
-
-  async getPositionBitableInfo(userId: number) {
-    const userPositionBitable = await this.userPositionBitableRepository.findOne({
-      where: { userId },
-    });
-    if (!userPositionBitable) {
-      return {
-        configured: false,
-        message: '您尚未配置职位信息表'
-      };
-    }
-    return {
-      configured: true,
-      data: userPositionBitable
-    };
-  }
-
-  async updatePositionBitableInfo(userId: number, updateBitableDto: UpdateJobBitableDto) {
-    try {
-      const user = await this.findById(userId);
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // 从 URL 中提取 tableId
-      const tableId = this.extractTableIdFromUrl(updateBitableDto.bitableUrl);
-
-      // 检测多维表配置是否成功
-      const result = await this.resumeService.checkBitableConfig(
-        updateBitableDto.bitableUrl,
-        tableId,
-        updateBitableDto.bitableToken
-      );
-      
-      if (!result) {
-        throw new BitableConfigException();
-      }
-
-      let userBitable = await this.userPositionBitableRepository.findOne({
-        where: { userId },
-      });
-
-      if (!userBitable) {
-        userBitable = this.userPositionBitableRepository.create({
-          user,
-          userId,
-          bitableUrl: updateBitableDto.bitableUrl,
-          bitableToken: updateBitableDto.bitableToken,
-          tableId: tableId
-        });
-      } else {
-        userBitable.bitableUrl = updateBitableDto.bitableUrl;
-        userBitable.bitableToken = updateBitableDto.bitableToken;
-        userBitable.tableId = tableId;
-      }
-
-      // 保存bitable信息
-      userBitable = await this.userPositionBitableRepository.save(userBitable);
-      return userBitable;
-    } catch (error) {
-      console.error('Error updating position bitable info:', error);
-      throw error;
-    }
-  }
-
-  // 获取用户的简历信息表配置（使用公司信息表作为简历信息表）
-  async getResumeBitableInfo(userId: number) {
-    // 在实际应用中，您可能需要创建一个专门的简历表实体
-    // 这里暂时使用公司信息表作为简历表
-    const userCompanyBitable = await this.userCompanyBitableRepository.findOne({
-      where: { userId },
-    });
-    if (!userCompanyBitable) {
-      return {
-        configured: false,
-        message: '您尚未配置简历信息表'
-      };
-    }
-    return {
-      configured: true,
-      data: userCompanyBitable
-    };
   }
 } 

@@ -20,11 +20,14 @@ import {
 } from '@nestjs/swagger';
 import { UpdateJobBitableDto } from './dto/update-bitable.dto';
 import { SendJobVerificationCodeDto, VerifyJobCodeDto } from './dto/phone-login.dto';
+import { BitableConfigException } from '../../common/exceptions/bitable-config.exception';
 
 @ApiTags('求职用户管理')
 @Controller('job/users')
 export class JobUsersController {
-  constructor(private readonly usersService: JobUsersService) {}
+  constructor(
+    private readonly usersService: JobUsersService,
+  ) {}
 
   @Post('send-verification-code')
   @ApiOperation({ summary: '发送验证码' })
@@ -161,42 +164,41 @@ export class JobUsersController {
   }
 
   @UseGuards(JobJwtAuthGuard)
-  @Put('bitable/company')
-  @ApiOperation({ summary: '更新公司信息表配置' })
-  async updateCompanyBitableInfo(
+  @Put('bitable')
+  @ApiOperation({ summary: '更新多维表格配置' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  async updateBitableInfo(
     @Request() req,
     @Body() updateBitableDto: UpdateJobBitableDto,
   ) {
-    return this.usersService.updateCompanyBitableInfo(
-      req.user.userId,
-      updateBitableDto,
-    );
+    try {
+      const result = await this.usersService.updateBitableInfo(
+        req.user.userId,
+        updateBitableDto,
+      );
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      if (error instanceof BitableConfigException) {
+        return {
+          success: false,
+          message: '飞书多维表格配置验证失败，请确保URL和Token正确且有访问权限',
+        };
+      }
+      return {
+        success: false,
+        message: `更新失败: ${error.message}`,
+      };
+    }
   }
 
   @UseGuards(JobJwtAuthGuard)
-  @Get('bitable/company')
-  @ApiOperation({ summary: '获取公司信息表配置' })
-  async getCompanyBitableInfo(@Request() req) {
-    return this.usersService.getCompanyBitableInfo(req.user.userId);
+  @Get('bitable')
+  @ApiOperation({ summary: '获取多维表格配置' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  async getBitableInfo(@Request() req) {
+    return this.usersService.getBitableInfo(req.user.userId);
   }
-
-  @UseGuards(JobJwtAuthGuard)
-  @Put('bitable/position')
-  @ApiOperation({ summary: '更新职位信息表配置' })
-  async updatePositionBitableInfo(
-    @Request() req,
-    @Body() updateBitableDto: UpdateJobBitableDto,
-  ) {
-    return this.usersService.updatePositionBitableInfo(
-      req.user.userId,
-      updateBitableDto,
-    );
-  }
-
-  @UseGuards(JobJwtAuthGuard)
-  @Get('bitable/position')
-  @ApiOperation({ summary: '获取职位信息表配置' })
-  async getPositionBitableInfo(@Request() req) {
-    return this.usersService.getPositionBitableInfo(req.user.userId);
-  }
-} 
+}

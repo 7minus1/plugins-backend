@@ -1,14 +1,11 @@
-import { IsString, IsUrl, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
 
 export class UpdateJobBitableDto {
-  @IsString()
-  @IsUrl()
+  @IsNotEmpty({ message: '飞书多维表URL不能为空' })
+  @IsUrl({}, { message: '请输入有效的URL地址' })
   bitableUrl: string;
 
-  @IsString()
+  @IsNotEmpty({ message: '飞书多维表Token不能为空' })
+  @IsString({ message: '请输入有效的Token' })
   bitableToken: string;
-
-  @IsString()
-  @IsOptional()
-  tableId?: string;
 } 

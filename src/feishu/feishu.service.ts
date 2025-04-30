@@ -152,9 +152,45 @@ export class FeishuService {
     );
     console.log('response', response);
     console.log('response.code', response.code);
-
     return response.code === 0;
   }
+
+    // 查询数据表字段，用于检测用户的多维表配置是否成功
+    async checkAndGetTableId(appToken: string, bitableToken: string) {
+      console.log('appToken', appToken);
+      console.log('bitableToken', bitableToken);
+      const client = new BaseClient({
+        appToken: appToken,
+        personalBaseToken: bitableToken,
+      });
+      const response = await client.base.appTable.list();
+
+      console.log('response', response);
+      console.log('response.code', response.code);
+
+      // 如果多维表配置不成功, 返回空数组
+      if (response.code !== 0) {
+        return []
+      }
+
+      console.log(response.data.items[0]);
+      // 单个表 { name: '个人信息', revision: 3, table_id: 'tblbjaKgtN0xrNs8' }
+      // 要找的数据表名称
+      const tableNames = ['AI 评估职位', 'AI 评估公司', 'AI 优化简历'];
+      
+      // tableNames 一个一个表找，返回tableId 数组
+      let tableIds = [];
+      for (const tableName of tableNames) {
+        const tableId = response.data.items.find(item => item.name === tableName)?.table_id;
+        if (tableId) {
+          tableIds.push(tableId);
+        } else {
+          console.log(`未找到表 ${tableName}`);
+          return [];  // 未找到表，返回空数组
+        }
+      }
+      return tableIds;
+    }
 
   async uploadFile(
     file: Express.Multer.File,
@@ -665,7 +701,6 @@ export class FeishuService {
     companyName: string
   ) {
     try {
-      tableId = 'tblx5fIqkVygbVAO'
       const client = new BaseClient({
         appToken: appToken,
         personalBaseToken: bitableToken,

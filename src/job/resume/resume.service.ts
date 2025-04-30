@@ -13,9 +13,9 @@ export class JobResumeService {
   ) {}
 
   // 检测多维表配置是否成功
-  async checkBitableConfig(bitableUrl: string, tableId: string, bitableToken: string) {
+  async checkAndGetTableId(bitableUrl: string, bitableToken: string) {
     const appToken = bitableUrl.split('?')[0].split('/').pop();
-    const result = await this.feishuService.checkBitableByFields(appToken, bitableToken, tableId);
+    const result = await this.feishuService.checkAndGetTableId(appToken, bitableToken);
     return result;
   }
 

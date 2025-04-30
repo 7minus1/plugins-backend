@@ -4,8 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JobUsersService } from './users.service';
 import { JobUsersController } from './users.controller';
 import { JobUser } from './entities/user.entity';
-import { JobUserCompanyBitable } from './entities/user-company-bitable.entity';
-import { JobUserPositionBitable } from './entities/user-position-bitable.entity';
+import { JobUserBitable } from './entities/user-bitable.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JobJwtStrategy } from './jwt.strategy';
 import { JobSmsService } from './services/sms.service';
@@ -17,8 +16,7 @@ import { JobResumeModule } from '../resume/resume.module';
     ConfigModule,
     TypeOrmModule.forFeature([
       JobUser,
-      JobUserCompanyBitable,
-      JobUserPositionBitable
+      JobUserBitable
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -31,7 +29,12 @@ import { JobResumeModule } from '../resume/resume.module';
     JobResumeModule,
   ],
   controllers: [JobUsersController],
-  providers: [JobUsersService, JobJwtStrategy, JobSmsService, JobRedisService],
+  providers: [
+    JobUsersService, 
+    JobJwtStrategy, 
+    JobSmsService, 
+    JobRedisService,
+  ],
   exports: [JobUsersService],
 })
 export class JobUsersModule {} 
