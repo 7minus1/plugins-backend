@@ -1,11 +1,15 @@
-import { Controller, Post, Body, UseGuards, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Request, UploadedFile, UseInterceptors, Get, Query, HttpException, HttpStatus, Res, StreamableFile } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { JobResumeService } from './resume.service';
 import { JobJwtAuthGuard } from '../users/guards/job-jwt-auth.guard';
 import { AddCompanyDto } from './dto/add-company.dto';
 import { JobUsersService } from '../users/users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JobInfoDto } from './dto/job-info.dto';
+import { ResumeVersionDto, ResumeVersionResponse } from './dto/resume-version.dto';
+import { Response } from 'express';
+import * as fs from 'fs';
+import { join } from 'path';
 
 @ApiTags('求职简历管理')
 @Controller('job/resume')
@@ -129,5 +133,141 @@ export class JobResumeController {
       jobInfo,
       bitableInfo.data
     );
+  }
+
+  @Get('version')
+  @UseGuards(JobJwtAuthGuard)
+  @ApiOperation({ summary: '获取简历版本文件' })
+  @ApiQuery({ name: 'positionName', required: true, description: '职位名称' })
+  @ApiQuery({ name: 'companyName', required: true, description: '公司名称' })
+  @ApiResponse({ status: 200, description: '获取成功，返回文件流' })
+  @ApiResponse({ status: 400, description: '参数错误' })
+  @ApiResponse({ status: 404, description: '未找到匹配的简历版本' })
+  async getResumeByVersion(
+    @Query() query: ResumeVersionDto,
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    let filePath: string | null = null;
+    
+    try {
+      // 获取用户ID
+      const userId = req.user.userId;
+      if (!userId) {
+        return res.status(HttpStatus.UNAUTHORIZED).json({
+          success: false,
+          message: '用户未授权'
+        });
+      }
+
+      // 获取用户的多维表格配置
+      const userBitable = await this.usersService.getResumeBitableInfo(userId);
+      if (!userBitable || !userBitable.configured) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: '请先配置简历信息表'
+        });
+      }
+
+      // 解析多维表格参数
+      const appToken = userBitable.data.bitableUrl.split('?')[0].split('/').pop();
+      const tableId = userBitable.data.tableId;
+      const bitableToken = userBitable.data.bitableToken;
+
+      // 检查是否有必要的参数
+      if (!query.positionName || !query.companyName) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: '缺少必要参数：职位名称或公司名称'
+        });
+      }
+
+      // 获取简历版本文件
+      const result = await this.resumeService.getResumeByVersion(
+        appToken,
+        tableId,
+        bitableToken,
+        query.positionName,
+        query.companyName,
+      );
+
+      if (!result.success) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: result.message || '获取简历文件失败'
+        });
+      }
+
+      // 获取文件路径
+      filePath = join(process.cwd(), result.fileName);
+      
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          success: false,
+          message: '文件不存在或下载失败'
+        });
+      }
+      
+      // 从文件名中提取正确的文件名（不含路径）
+      const fileName = result.fileName.split('/').pop();
+      
+      // 设置响应头
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${encodeURIComponent(fileName)}`);
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+      
+      // 直接使用pipe发送文件流
+      const fileStream = fs.createReadStream(filePath);
+      
+      // 监听错误事件
+      fileStream.on('error', (error) => {
+        console.error('文件流读取错误:', error);
+        if (!res.headersSent) {
+          res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: '文件读取失败'
+          });
+        }
+      });
+      
+      // 文件传输完成后删除
+      fileStream.on('end', () => {
+        // 延迟删除临时文件，确保文件传输完成
+        setTimeout(() => {
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`临时文件已删除: ${filePath}`);
+            }
+          } catch (err) {
+            console.error(`删除临时文件失败: ${filePath}`, err);
+          }
+        }, 1000); // 延迟1秒删除
+      });
+      
+      // 发送文件流
+      fileStream.pipe(res);
+      
+    } catch (error) {
+      console.error('获取简历版本失败:', error);
+      
+      // 如果响应头尚未发送，则发送错误响应
+      if (!res.headersSent) {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          message: `获取简历版本失败: ${error.message}`
+        });
+      }
+      
+      // 尝试删除临时文件
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.error(`清理临时文件失败: ${filePath}`, err);
+        }
+      }
+    }
   }
 } 

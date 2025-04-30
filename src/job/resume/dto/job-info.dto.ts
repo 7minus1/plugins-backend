@@ -76,4 +76,9 @@ export class JobInfoDto {
   @IsString()
   @IsOptional()
   company_name: string;
+
+  @ApiProperty({ description: '职位链接', required: false })
+  @IsString()
+  @IsOptional()
+  job_link: string;
 } 

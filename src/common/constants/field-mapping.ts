@@ -71,4 +71,5 @@ export const POSITION_FIELD_NAME_MAP = {
   company_link: '公司链接',
   company_name: '公司名称',
   position_image: '职位详情图像',
+  job_link: '职位链接',
 } as const; 

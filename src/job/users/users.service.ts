@@ -361,10 +361,10 @@ export class JobUsersService {
   }
 
   async getPositionBitableInfo(userId: number) {
-    const userBitable = await this.userPositionBitableRepository.findOne({
+    const userPositionBitable = await this.userPositionBitableRepository.findOne({
       where: { userId },
     });
-    if (!userBitable) {
+    if (!userPositionBitable) {
       return {
         configured: false,
         message: '您尚未配置职位信息表'
@@ -372,7 +372,7 @@ export class JobUsersService {
     }
     return {
       configured: true,
-      data: userBitable
+      data: userPositionBitable
     };
   }
 
@@ -422,5 +422,24 @@ export class JobUsersService {
       console.error('Error updating position bitable info:', error);
       throw error;
     }
+  }
+
+  // 获取用户的简历信息表配置（使用公司信息表作为简历信息表）
+  async getResumeBitableInfo(userId: number) {
+    // 在实际应用中，您可能需要创建一个专门的简历表实体
+    // 这里暂时使用公司信息表作为简历表
+    const userCompanyBitable = await this.userCompanyBitableRepository.findOne({
+      where: { userId },
+    });
+    if (!userCompanyBitable) {
+      return {
+        configured: false,
+        message: '您尚未配置简历信息表'
+      };
+    }
+    return {
+      configured: true,
+      data: userCompanyBitable
+    };
   }
 } 

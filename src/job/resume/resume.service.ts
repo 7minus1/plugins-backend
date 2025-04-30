@@ -142,7 +142,8 @@ export class JobResumeService {
             positionAddress: jobInfo.position_address,
             publisherName: jobInfo.publisher_name,
             publisherAvatar: jobInfo.publisher_avatar,
-            companyName: jobInfo.company_name
+            companyName: jobInfo.company_name,
+            jobLink: jobInfo.job_link
           }
         );
 
@@ -168,6 +169,51 @@ export class JobResumeService {
       return {
         success: false,
         message: `处理职位上传请求失败: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * 通过职位名称和公司名称获取简历版本文件
+   * @param appToken 飞书应用Token
+   * @param tableId 多维表格ID
+   * @param bitableToken 多维表格访问Token
+   * @param positionName 职位名称
+   * @param companyName 公司名称
+   * @returns 简历文件信息，包含文件路径
+   */
+  async getResumeByVersion(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    positionName: string,
+    companyName: string
+  ) {
+    try {
+      // 调用飞书服务获取简历版本文件
+      const result = await this.feishuService.getResumeByVersion(
+        appToken,
+        tableId,
+        bitableToken,
+        positionName,
+        companyName
+      );
+      
+      // 如果下载成功，直接返回结果
+      if (result.success) {
+        return {
+          success: true,
+          fileName: result.fileName,
+          message: '文件下载成功'
+        };
+      } else {
+        return result;
+      }
+    } catch (error) {
+      console.error('获取简历版本文件失败:', error);
+      return {
+        success: false,
+        message: `获取简历文件失败: ${error.message}`
       };
     }
   }

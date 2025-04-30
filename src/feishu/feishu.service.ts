@@ -591,6 +591,7 @@ export class FeishuService {
       publisherName?: string;
       publisherAvatar?: string;
       companyName?: string;
+      jobLink?: string;
     }
   ) {
     try {
@@ -599,10 +600,12 @@ export class FeishuService {
         personalBaseToken: bitableToken,
       });
 
+      console.log('职位链接', positionInfo.jobLink);
       const fields: Record<string, any> = {
         [POSITION_FIELD_NAME_MAP.position_name]: positionInfo.positionName,
         [POSITION_FIELD_NAME_MAP.company_link]: positionInfo.companyLink,
         [POSITION_FIELD_NAME_MAP.position_image]: [fileToken],
+        [POSITION_FIELD_NAME_MAP.job_link]: positionInfo.jobLink,
       };
 
       // 添加可选字段（如果存在）
@@ -642,6 +645,117 @@ export class FeishuService {
         status: error.response?.status,
       });
       throw error;
+    }
+  }
+
+  /**
+   * 通过职位名称和公司名称获取简历版本文件
+   * @param appToken 飞书应用Token
+   * @param tableId 多维表格ID
+   * @param bitableToken 多维表格访问Token
+   * @param positionName 职位名称
+   * @param companyName 公司名称
+   * @returns 简历文件信息
+   */
+  async getResumeByVersion(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    positionName: string,
+    companyName: string
+  ) {
+    try {
+      tableId = 'tblx5fIqkVygbVAO'
+      const client = new BaseClient({
+        appToken: appToken,
+        personalBaseToken: bitableToken,
+      });
+
+      // 构建查询条件：简历版本字段包含职位名称-公司名称
+      const versionPattern = `${positionName}-${companyName}-`;
+      
+      // 查询符合条件的记录
+      const response = await client.base.appTableRecord.list(
+        {
+          path: {
+            table_id: tableId,
+          },
+          params: {
+            // field_names: '["简历版本", "附件简历"]',
+            filter: `CurrentValue.[简历版本].contains("${versionPattern}")`
+          },
+        },
+        lark.withTenantToken(bitableToken),
+      );
+
+      // 检查是否找到匹配的记录
+      if (!response.data.items || response.data.items.length === 0) {
+        return {
+          success: false,
+          message: `未找到匹配的简历版本: ${versionPattern}`
+        };
+      }
+
+      console.log('items 0', response.data.items[0]);
+      
+      // 获取第一条匹配的记录
+      const record = response.data.items[0].fields;
+      
+      // 检查记录中是否包含简历文件
+      if (!record['附件简历'] || !Array.isArray(record['附件简历']) || record['附件简历'].length === 0) {
+        return {
+          success: false,
+          message: '找到的记录中不包含附件简历'
+        };
+      }
+
+      // record['简历版本'] 一定有值
+      const filename = record['简历版本'];
+      // 获取文件token
+      const fileToken = record['附件简历'][0]['file_token'];  // 第一个文件的token
+      console.log('fileToken', fileToken);
+      /* fileInfo
+        {
+          file_token: 'C9ovbX5twoR8V5x1wLrcsbvFn3c',
+          name: 'resume.pdf',
+          size: 97352,
+          tmp_url: 'https://open.feishu.cn/open-apis/drive/v1/medias/batch_get_tmp_download_url?file_tokens=C9ovbX5twoR8V5x1wLrcsbvFn3c',
+          type: 'application/pdf',
+          url: 'https://open.feishu.cn/open-apis/drive/v1/medias/C9ovbX5twoR8V5x1wLrcsbvFn3c/download'
+        }
+      */
+      
+      // 设置保存路径
+      const outputPath = `${filename}.pdf`;
+      
+      // 根据文件token下载
+      await client.drive.media.download({
+        path: {file_token: fileToken},
+        // 如果 Base 开启了高级权限，则需要填写 extra 参数，否则不用传。
+      }).then(res => {
+        // console.log('res', res);
+        return res.writeFile(outputPath);
+      }).catch(err => {
+        console.error('下载失败:', err);
+        throw err;
+      });
+      
+      return {
+        success: true,
+        fileName: outputPath,
+        message: '文件下载成功'
+      };
+    } catch (error) {
+      console.error('获取简历版本文件失败:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      
+      return {
+        success: false,
+        message: `获取简历文件失败: ${error.message}`
+      };
     }
   }
 }
