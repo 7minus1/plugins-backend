@@ -30,4 +30,10 @@ export class GreetMessageResponse {
   success: boolean;
   message?: string;
   greetMsg?: string[];
+}
+
+export class ResumeImageResponse {
+  success: boolean;
+  message?: string;
+  fileUrls?: string[];
 } 

@@ -8,11 +8,12 @@ import {
   CreateBitableRecordResponse,
 } from './dto/feishu.dto';
 import { Readable } from 'stream';
-import { createReadStream } from 'fs';
+import { createReadStream, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { writeFileSync } from 'fs';
 import { FIELD_NAME_MAP, COMPANY_FIELD_NAME_MAP, POSITION_FIELD_NAME_MAP } from '../common/constants/field-mapping';
+import { TencentCloudService } from 'src/tencent-cloud/tencent-cloud.service';
 
 // 工具函数：格式化日期，只保留年月
 const formatDate = (dateStr: string) => {
@@ -27,7 +28,7 @@ export class FeishuService {
   // private appToken: string; // 应用的token，用于创建表格
   // private tableId: string; // 表格的ID，用于新增记录
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService, private cloudStorage: TencentCloudService) {
     // this.client = new lark.Client({
     //   appId: this.configService.get('FEISHU_APP_ID'),
     //   appSecret: this.configService.get('FEISHU_APP_SECRET'),
@@ -733,7 +734,7 @@ export class FeishuService {
         };
       }
 
-      console.log('items 0', response.data.items[0]);
+      // console.log('items 0', response.data.items[0]);
       
       // 获取第一条匹配的记录
       const record = response.data.items[0].fields;
@@ -796,6 +797,111 @@ export class FeishuService {
     }
   }
 
+  async getResumeImagesByVersion(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    positionName: string,
+    companyName: string
+  ) {
+    try {
+      const client = new BaseClient({
+        appToken: appToken,
+        personalBaseToken: bitableToken,
+      });
+
+      
+      // 构建查询条件：简历版本字段包含职位名称-公司名称
+      // const versionPattern = `${positionName}-${companyName}`;
+      
+      const versionPattern = '产品经理-拓竹科技';
+      // 查询符合条件的记录
+      const response = await client.base.appTableRecord.list(
+        {
+          path: {
+            table_id: tableId,
+          },
+          params: {
+            // field_names: '["简历版本", "附件简历"]',
+            filter: `CurrentValue.[简历版本].contains("${versionPattern}")`
+          },
+        },
+        lark.withTenantToken(bitableToken),
+      );
+
+      // 检查是否找到匹配的记录
+      if (!response.data.items || response.data.items.length === 0) {
+        return {
+          success: false,
+          message: `未找到匹配的简历版本: ${versionPattern}`
+        };
+      }
+
+      console.log('items 0', response.data.items[0]);
+
+      // 获取第一条匹配的记录
+      const record = response.data.items[0].fields;
+      
+      // 检查记录中是否包含简历图片
+      if (!record['简历图片'] || !Array.isArray(record['简历图片']) || record['简历图片'].length === 0) {
+        return {
+          success: false,
+          message: '找到的记录中不包含简历图片'
+        };
+      }
+
+      // 获取简历版本，用作图像文件名
+      const filename = record['简历版本'];
+      // 将记录中的简历图片token形成一个数组
+      const imageFiles = record['简历图片'];
+      // 遍历数组，获取每个文件的token
+      const imageTokens = imageFiles.map(file => file.file_token);
+      console.log('imageTokens', imageTokens);
+      
+      const outputPaths = [];
+      // 遍历数组，下载每个文件
+      for (const [idx, imageToken] of imageTokens.entries()) {
+        // 下载文件
+        const fileToken = imageToken;
+        // filename_idx.jpg
+        const outputPath = `${filename}_${idx}.jpg`;
+        outputPaths.push(outputPath);
+        await client.drive.media.download({path: {file_token: fileToken}})
+        .then(res => {
+          res.writeFile(outputPath);
+          console.log('文件下载成功:', { fileName: outputPath });
+        }).catch(err => {
+          console.error('下载失败:', err);
+          throw err;
+        });
+      }
+
+      // 上传数组文件到腾讯云
+      const fileUrls = [];
+      for (const outputPath of outputPaths) {
+        const fileBuffer = readFileSync(outputPath);
+        const fileInfo = await this.cloudStorage.uploadFile(
+          outputPath,
+          fileBuffer,
+        );
+        fileUrls.push(fileInfo.url);
+        // 删除本地文件
+        unlinkSync(outputPath);
+      }
+      return {
+        success: true,
+        fileUrls,
+        message: '获取简历图片成功'
+      }
+    } catch (error) {
+      console.error('获取简历图片失败:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+    }
+  }
+  
   async getGreetMsgByVersion(
     appToken: string,
     tableId: string,

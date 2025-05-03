@@ -6,7 +6,7 @@ import { AddCompanyDto } from './dto/add-company.dto';
 import { JobUsersService } from '../users/users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JobInfoDto } from './dto/job-info.dto';
-import { ResumeVersionDto, ResumeVersionResponse, GreetMessageResponse } from './dto/resume-version.dto';
+import { ResumeVersionDto, ResumeVersionResponse, GreetMessageResponse, ResumeImageResponse } from './dto/resume-version.dto';
 import { Response } from 'express';
 import * as fs from 'fs';
 import { join } from 'path';
@@ -327,6 +327,66 @@ export class JobResumeController {
       return {
         success: false,
         message: `获取打招呼语失败: ${error.message}`
+      };
+    }
+  }
+
+  @Get('image')
+  @UseGuards(JobJwtAuthGuard)
+  @ApiOperation({ summary: '获取简历图像' })
+  @ApiQuery({ name: 'positionName', required: true, description: '职位名称' })
+  @ApiQuery({ name: 'companyName', required: true, description: '公司名称' })
+  @ApiResponse({ status: 200, description: '获取成功，返回图像在线链接', type: ResumeImageResponse })
+  @ApiResponse({ status: 400, description: '参数错误' })
+  @ApiResponse({ status: 404, description: '未找到匹配的简历图像' })
+  async getResumeImages(
+    @Query() query: ResumeVersionDto,
+    @Request() req,
+  ) {
+    try {
+      // 获取用户ID
+      const userId = req.user.userId;
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未授权'
+        };
+      }
+
+      // 获取用户的多维表格配置
+      const userBitable = await this.usersService.getResumeBitableInfo(userId);
+      if (!userBitable || !userBitable.configured) {
+        return {
+          success: false,
+          message: '请先配置简历信息表'
+        };
+      }
+
+      // 解析多维表格参数
+      const appToken = userBitable.data.bitableUrl.split('?')[0].split('/').pop();
+      const tableId = userBitable.data.tableId;
+      const bitableToken = userBitable.data.bitableToken;
+
+      // 检查是否有必要的参数
+      if (!query.positionName || !query.companyName) {
+        return {
+          success: false,
+          message: '缺少必要参数：职位名称或公司名称'
+        };
+      }
+
+      // 获取简历图像
+      return this.resumeService.getResumeImagesByPosition(
+        appToken,
+        tableId,
+        bitableToken,
+        query.positionName,
+        query.companyName,
+      );
+    } catch (error) {
+      return {
+        success: false,
+        message: `获取简历图像失败: ${error.message}`
       };
     }
   }

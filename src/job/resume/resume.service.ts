@@ -254,4 +254,41 @@ export class JobResumeService {
       };
     }
   }
+
+  /**
+   * 通过职位名称和公司名称获取简历图像
+   * @param appToken 飞书应用Token
+   * @param tableId 多维表格ID
+   * @param bitableToken 多维表格访问Token
+   * @param positionName 职位名称
+   * @param companyName 公司名称
+   * @returns 简历图像在线链接信息
+   */
+  async getResumeImagesByPosition(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    positionName: string,
+    companyName: string
+  ) {
+    try {
+      // 调用飞书服务获取简历图像
+      const result = await this.feishuService.getResumeImagesByVersion(
+        appToken,
+        tableId,
+        bitableToken,
+        positionName,
+        companyName
+      );
+
+      // 直接返回飞书服务的结果
+      return result;
+    } catch (error) {
+      console.error('获取简历图像失败:', error);
+      return {
+        success: false,
+        message: `获取简历图像失败: ${error.message}`
+      };
+    }
+  }
 } 
