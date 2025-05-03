@@ -24,4 +24,10 @@ export class ResumeVersionResponse {
   message?: string;
   fileUrl?: string;
   fileName?: string;
+}
+
+export class GreetMessageResponse {
+  success: boolean;
+  message?: string;
+  greetMsg?: string[];
 } 

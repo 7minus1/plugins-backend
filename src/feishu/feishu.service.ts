@@ -134,6 +134,7 @@ export class FeishuService {
   // }
 
   // 查询数据表字段，用于检测用户的多维表配置是否成功
+  
   async checkBitableByFields(appToken: string, bitableToken: string, tableId: string) {
     console.log('appToken', appToken);
     console.log('bitableToken', bitableToken);
@@ -223,6 +224,7 @@ export class FeishuService {
     return fileToken; // 一串字符串 ICTLbSvFhoWB3TxwpgicgfE4ned
   }
 
+  // 添加hr-简历表的记录
   // async addBitableRecord(
   //   appToken: string,
   //   tableId: string,
@@ -707,7 +709,7 @@ export class FeishuService {
       });
 
       // 构建查询条件：简历版本字段包含职位名称-公司名称
-      const versionPattern = `${positionName}-${companyName}-`;
+      const versionPattern = `${positionName}-${companyName}`;
       
       // 查询符合条件的记录
       const response = await client.base.appTableRecord.list(
@@ -790,6 +792,83 @@ export class FeishuService {
       return {
         success: false,
         message: `获取简历文件失败: ${error.message}`
+      };
+    }
+  }
+
+  async getGreetMsgByVersion(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    positionName: string,
+    companyName: string
+  ) {
+    
+    try {
+      const client = new BaseClient({
+        appToken: appToken,
+        personalBaseToken: bitableToken,
+      });
+
+      // 构建查询条件：简历版本字段包含职位名称-公司名称
+      // TODO： 复原
+      const versionPattern = `${positionName}-${companyName}`;
+
+      // const versionPattern = '产品经理-拓竹科技';
+      
+      // 查询符合条件的记录
+      const response = await client.base.appTableRecord.list(
+        {
+          path: {
+            table_id: tableId,
+          },
+          params: {
+            filter: `CurrentValue.[简历版本].contains("${versionPattern}")`
+          },
+        },
+        lark.withTenantToken(bitableToken),
+      );
+
+      // 检查是否找到匹配的记录
+      if (!response.data.items || response.data.items.length === 0) {
+        return {
+          success: false,
+          message: `未找到匹配的简历版本: ${versionPattern}`
+        };
+      }
+
+      console.log('items 0', response.data.items[0]);
+      
+      // 获取第一条匹配的记录
+      const record = response.data.items[0].fields;
+      
+      // 检查记录中是否包含打招呼语
+      if (!record['打招呼语']) {
+        return {
+          success: false,
+          message: '找到的记录中不包含打招呼语'
+        };
+      }
+
+      // record['打招呼语'] 一定有值
+      const greetMsg = record['打招呼语'];
+      console.log('greetMsg', greetMsg);
+      
+      return {
+        success: true,
+        greetMsg,
+        message: '获取打招呼语成功'
+      };
+    } catch (error) {
+      console.error('获取打招呼语失败:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      
+      return {
+        success: false,
+        message: `获取打招呼语失败: ${error.message}`
       };
     }
   }
