@@ -917,8 +917,8 @@ export class FeishuService {
 
       // 构建查询条件：简历版本字段包含职位名称-公司名称
       // TODO： 复原
-      positionName = 'app产品经理';
-      companyName = '追觅科技';
+      // positionName = 'app产品经理';
+      // companyName = '追觅科技';
       const positionPattern = `${positionName}-${companyName}`;
 
       // 构建查询条件：职位名称和公司名称都包含
