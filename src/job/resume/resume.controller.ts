@@ -6,7 +6,7 @@ import { AddCompanyDto } from './dto/add-company.dto';
 import { JobUsersService } from '../users/users.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JobInfoDto } from './dto/job-info.dto';
-import { ResumeVersionDto, ResumeVersionResponse, GreetMessageResponse, ResumeImageResponse } from './dto/resume-version.dto';
+import { ResumeVersionDto, ResumeVersionResponse, GreetMessageResponse, ResumeImageResponse, EvalInfoResponse } from './dto/resume-version.dto';
 import { Response } from 'express';
 import * as fs from 'fs';
 import { join } from 'path';
@@ -294,7 +294,7 @@ export class JobResumeController {
       }
 
       // 获取用户的多维表格配置
-      const userBitable = await this.usersService.getResumeBitableInfo(userId);
+      const userBitable = await this.usersService.getPositionBitableInfo(userId);
       if (!userBitable || !userBitable.configured) {
         return {
           success: false,
@@ -387,6 +387,66 @@ export class JobResumeController {
       return {
         success: false,
         message: `获取简历图像失败: ${error.message}`
+      };
+    }
+  }
+
+  @Get('eval')
+  @UseGuards(JobJwtAuthGuard)
+  @ApiOperation({ summary: '获取职位评估信息' })
+  @ApiQuery({ name: 'positionName', required: true, description: '职位名称' })
+  @ApiQuery({ name: 'companyName', required: true, description: '公司名称' })
+  @ApiResponse({ status: 200, description: '获取成功，返回职位评估信息', type: EvalInfoResponse })
+  @ApiResponse({ status: 400, description: '参数错误' })
+  @ApiResponse({ status: 404, description: '未找到匹配的职位评估信息' })
+  async getEvalInfo(
+    @Query() query: ResumeVersionDto,
+    @Request() req,
+  ) {
+    try {
+      // 获取用户ID
+      const userId = req.user.userId;
+      if (!userId) {
+        return {
+          success: false,
+          message: '用户未授权'
+        };
+      }
+
+      // 获取用户的多维表格配置
+      const userBitable = await this.usersService.getPositionBitableInfo(userId);
+      if (!userBitable || !userBitable.configured) {
+        return {
+          success: false,
+          message: '请先配置职位信息表'
+        };
+      }
+
+      // 解析多维表格参数
+      const appToken = userBitable.data.bitableUrl.split('?')[0].split('/').pop();
+      const tableId = userBitable.data.tableId;
+      const bitableToken = userBitable.data.bitableToken;
+
+      // 检查是否有必要的参数
+      if (!query.positionName || !query.companyName) {
+        return {
+          success: false,
+          message: '缺少必要参数：职位名称或公司名称'
+        };
+      }
+
+      // 获取职位评估信息
+      return this.resumeService.getEvalInfoByPosition(
+        appToken,
+        tableId,
+        bitableToken,
+        query.positionName,
+        query.companyName,
+      );
+    } catch (error) {
+      return {
+        success: false,
+        message: `获取职位评估信息失败: ${error.message}`
       };
     }
   }

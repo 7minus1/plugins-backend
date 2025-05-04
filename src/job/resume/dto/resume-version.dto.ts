@@ -36,4 +36,16 @@ export class ResumeImageResponse {
   success: boolean;
   message?: string;
   fileUrls?: string[];
+}
+
+export interface EvalInfo {
+  recommendLevel: string;
+  evalResult: string;
+  greetMsg: string[];
+}
+
+export class EvalInfoResponse {
+  success: boolean;
+  message?: string;
+  evalInfo?: EvalInfo;
 } 

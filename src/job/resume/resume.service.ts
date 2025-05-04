@@ -236,7 +236,7 @@ export class JobResumeService {
   ) {
     try {
       // 调用飞书服务获取打招呼语
-      const result = await this.feishuService.getGreetMsgByVersion(
+      const result = await this.feishuService.getGreetMsgByPosition(
         appToken,
         tableId,
         bitableToken,
@@ -288,6 +288,43 @@ export class JobResumeService {
       return {
         success: false,
         message: `获取简历图像失败: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * 通过职位名称和公司名称获取职位评估信息
+   * @param appToken 飞书应用Token
+   * @param tableId 多维表格ID
+   * @param bitableToken 多维表格访问Token
+   * @param positionName 职位名称
+   * @param companyName 公司名称
+   * @returns 职位评估信息
+   */
+  async getEvalInfoByPosition(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    positionName: string,
+    companyName: string
+  ) {
+    try {
+      // 调用飞书服务获取职位评估信息
+      const result = await this.feishuService.getEvalInfoByPosition(
+        appToken,
+        tableId,
+        bitableToken,
+        positionName,
+        companyName
+      );
+
+      // 直接返回飞书服务的结果
+      return result;
+    } catch (error) {
+      console.error('获取职位评估信息失败:', error);
+      return {
+        success: false,
+        message: `获取职位评估信息失败: ${error.message}`
       };
     }
   }
