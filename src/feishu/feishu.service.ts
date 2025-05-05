@@ -410,6 +410,8 @@ export class FeishuService {
       };
 
       console.log('fields', fields);
+      // TODO 复原
+      // additionalFields.deliveryPosition = '产品经理';
       if (additionalFields) {
         fields['投递渠道'] = additionalFields.deliveryChannel;
         fields['求职岗位'] = additionalFields.deliveryPosition;
@@ -1051,7 +1053,7 @@ export class FeishuService {
       /*
       "evalResult": [
         {
-          "text": "AI职位匹配报告  \n一、职位概览  \n**基本信息**  \n👤 职位：App产品经理  \n📊 最终匹配度：82%  \n🎓 公司：追觅科技  \n📅 公司信息：智能硬件与机器人领域头部企业  \n🔍 职位核心评价：需具备移动端全流程管理能力与用户体验洞察  \n\n**亮点标签**  \n✅ AI技术应用场景 ✅ 用户增长与商业化闭环 ✅ 跨团队协作  \n\n---\n\n### 二、匹配度评估  \n**最终匹配度：82%**  \n**优势**：6年AI产品经验、千万级用户增长与商业化成果、技术理解深度远超岗位要求；  \n**不足**：移动端策略规划与剪辑类产品经验需进一步匹配。  \n\n**评估维度**  \n1. **专业能力**：92% | 权重25%  \n   - 主导AIGC产品全流程开发，数据驱动迭代能力突出，PRD撰写经验丰富。  \n   - *优势*：商业化闭环构建能力（月流水70万美金）、AI模型技术落地经验（Stable Diffusion/LoRA）。  \n\n2. **行业经验**：75% | 权重20%  \n   - 虽无智能硬件行业经验，但AI产品全球市场拓展能力（用户900万+）可迁移至移动端场景。  \n   - *不足*：追觅可能涉及IoT与APP联动场景，需补充硬件协同经验。  \n\n3. **项目经历**：95% | 权重20%  \n   - 项目规模与复杂度匹配：主导用户600万+的AI视频工具，DAU峰值15万，远超岗位预期。  \n   - *优势*：跨团队协作能力（算法、开发、设计）、技术攻坚成果（生成效率提升40%）。  \n\n4. **技术工具**：85% | 权重15%  \n   - 熟练使用Axure/Xmind/墨刀，熟悉AI模型训练流程，符合工具要求。  \n   - *加分项*：英语能力支持全球化业务拓展。  \n\n5. **基础匹配**：100% | 权重10%  \n   - 学历、工作年限完全达标。  \n\n---\n\n### 三、深度分析  \n**职位核心优势（3项）**  \n1. **数据驱动与商业化能力**：季度IAP收入增长150%、订阅转化率3.1%，证明其变现策略设计能力远超岗位需求。  \n2. **AI技术落地经验**：推动生成速度优化（5分钟→2分钟）、上线200+动态模板，契合追觅技术驱动文化。  \n3. **跨团队协作与高效交付**：协调算法、开发团队完成复杂项目，确保高质量交付，符合岗位“跟进开发落地”要求。  \n\n**求职者待提升事项**  \n1. **移动端策略深度**：简历未明确展示APP端用户增长策略（如DAU/留存率优化），需提炼过往经验中与移动端重合的部分（如微信小程序DAU 2万）。  \n2. **硬件协同经验**：追觅业务可能涉及智能硬件与APP联动，需补充IoT相关场景经验或学习意愿。  \n\n**预计考察点**  \n1. **用户需求洞察能力**：面试官可能通过“AI拥抱功能渗透率提升至60%”等案例，考察其如何平衡用户需求与技术实现。  \n2. **移动端产品方法论**：重点追问竞品分析框架（如剪辑类产品对标逻辑）、需求优先级排序策略。  \n\n---\n\n### 投递建议  \n**强烈建议投递**：  \n- 技术理解深度与商业化成果显著高于岗位要求，可弥补行业经验差异。  \n- 建议在简历中强化“移动端产品规划能力”（如微信小程序DAU 2万案例），并准备硬件协同场景的迁移性回答。",
+          "text": "AI职位匹配报告  \n一、职位概览  \n**基本信息**  \n👤 职位：App产品经理  \n📊 最终匹配度：82%  \n🎓 公司：追觅科技  \n📅 公司信息：智能硬件与机器人领域头部企业  \n🔍 职位核心评价：需具备移动端全流程管理能力与用户体验洞察  \n\n**亮点标签**  \n✅ AI技术应用场景 ✅ 用户增长与商业化闭环 ✅ 跨团队协作  \n\n---\n\n### 二、匹配度评估  \n**最终匹配度：82%**  \n**优势**：6年AI产品经验、千万级用户增长与商业化成果、技术理解深度远超岗位要求；  \n**不足**：移动端策略规划与剪辑类产品经验需进一步匹配。  \n\n**评估维度**  \n1. **专业能力**：92% | 权重25%  \n   - 主导AIGC产品全流程开发，数据驱动迭代能力突出，PRD撰写经验丰富。  \n   - *优势*：商业化闭环构建能力（月流水70万美金）、AI模型技术落地经验（Stable Diffusion/LoRA）。  \n\n2. **行业经验**：75% | 权重20%  \n   - 虽无智能硬件行业经验，但AI产品全球市场拓展能力（用户900万+）可迁移至移动端场景。  \n   - *不足*：追觅可能涉及IoT与APP联动场景，需补充硬件协同经验。  \n\n3. **项目经历**：95% | 权重20%  \n   - 项目规模与复杂度匹配：主导用户600万+的AI视频工具，DAU峰值15万，远超岗位预期。  \n   - *优势*：跨团队协作能力（算法、开发、设计）、技术攻坚成果（生成效率提升40%）。  \n\n4. **技术工具**：85% | 权重15%  \n   - 熟练使用Axure/Xmind/墨刀，熟悉AI模型训练流程，符合工具要求。  \n   - *加分项*：英语能力支持全球化业务拓展。  \n\n5. **基础匹配**：100% | 权重10%  \n   - 学历、工作年限完全达标。  \n\n---\n\n### 三、深度分析  \n**职位核心优势（3项）**  \n1. **数据驱动与商业化能力**：季度IAP收入增长150%、订阅转化率3.1%，证明其变现策略设计能力远超岗位需求。  \n2. **AI技术落地经验**：推动生成速度优化（5分钟→2分钟）、上线200+动态模板，契合追觅技术驱动文化。  \n3. **跨团队协作与高效交付**：协调算法、开发团队完成复杂项目，确保高质量交付，符合岗位"跟进开发落地"要求。  \n\n**求职者待提升事项**  \n1. **移动端策略深度**：简历未明确展示APP端用户增长策略（如DAU/留存率优化），需提炼过往经验中与移动端重合的部分（如微信小程序DAU 2万）。  \n2. **硬件协同经验**：追觅业务可能涉及智能硬件与APP联动，需补充IoT相关场景经验或学习意愿。  \n\n**预计考察点**  \n1. **用户需求洞察能力**：面试官可能通过"AI拥抱功能渗透率提升至60%"等案例，考察其如何平衡用户需求与技术实现。  \n2. **移动端产品方法论**：重点追问竞品分析框架（如剪辑类产品对标逻辑）、需求优先级排序策略。  \n\n---\n\n### 投递建议  \n**强烈建议投递**：  \n- 技术理解深度与商业化成果显著高于岗位要求，可弥补行业经验差异。  \n- 建议在简历中强化"移动端产品规划能力"（如微信小程序DAU 2万案例），并准备硬件协同场景的迁移性回答。",
           "type": "text"
         }
       ],
@@ -1087,6 +1089,78 @@ export class FeishuService {
         response: error.response?.data,
         status: error.response?.status,
       });
+    }
+  }
+
+  async getResumeEvalById(
+    appToken: string,
+    tableId: string,
+    bitableToken: string,
+    resumeId: string
+  ) {
+    try {
+      const client = new BaseClient({
+        appToken: appToken,
+        personalBaseToken: bitableToken,
+      });
+      // TODO 复原
+      // resumeId = 'recuKeBBubg3zC';
+      
+      const response = await client.base.appTableRecord.get(
+        {
+          path: {
+            table_id: tableId,
+            record_id: resumeId,
+          },
+        },
+        lark.withTenantToken(bitableToken),
+      );
+      
+      // 获取第一条匹配的记录
+      const record = response.data.record.fields;
+      console.log('record', record);
+      // 根据评估结果状态，返回不同的评估结果
+      const evalResultStatus = record['评估结果状态'];
+
+      // 不是分析成功
+      if (evalResultStatus !== '分析成功') {
+        return {
+          success: false,
+          message: '职位分析中...',
+          status: evalResultStatus
+        };
+      }
+
+      // 返回推荐等级、AI 评估 V3、匹配度
+      const evalInfo = {
+        recommendLevel: record['推荐等级'],
+        evalResult: record['AI 评估 V3'],
+        matchDegree: record['匹配度']
+      };
+
+      return {
+        success: true,
+        evalInfo,
+        message: '获取评估信息成功'
+      };
+
+    } catch (error) {
+      console.error('获取简历评估信息失败:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      
+      // 添加更详细的错误信息返回
+      return {
+        success: false,
+        message: `获取简历评估信息失败: ${error.message}`,
+        error: {
+          status: error.response?.status,
+          code: error.response?.data?.code,
+          msg: error.response?.data?.msg || error.message
+        }
+      };
     }
   }
 }

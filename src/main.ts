@@ -3,10 +3,18 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { LoggerService } from './common/logger/logger.service';
 // import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // 获取日志服务
+  const loggerService = app.get(LoggerService);
+  
+  // 设置全局日志服务
+  app.useLogger(loggerService);
 
   // 设置全局基础路径
   app.setGlobalPrefix('api');
@@ -24,7 +32,10 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   
   // 使用全局响应拦截器
-  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalInterceptors(
+    new TransformInterceptor(),
+    new LoggingInterceptor(loggerService), // 添加日志拦截器
+  );
 
   // 配置 CORS
   app.enableCors({
@@ -42,18 +53,10 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
   });
 
-  // 配置 Swagger
-  // const config = new DocumentBuilder()
-  //   .setTitle('API')
-  //   .setDescription('API 文档')
-  //   .setVersion('1.0')
-  //   .addBearerAuth()
-  //   .build();
-  // const document = SwaggerModule.createDocument(app, config);
-  // SwaggerModule.setup('api', app, document);
-
-  // 打印数据库连接信息 DB_HOST
-  console.log('DB_HOST:', process.env.DB_HOST);
+  // 打印日志信息
+  loggerService.log('应用程序启动', 'Bootstrap');
+  loggerService.log(`数据库连接: ${process.env.DB_HOST}`, 'Bootstrap');
+  loggerService.log(`监听端口: ${process.env.PORT ?? 3000}`, 'Bootstrap');
 
   await app.listen(process.env.PORT ?? 3000);
 }

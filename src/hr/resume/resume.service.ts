@@ -172,14 +172,13 @@ export class HrResumeService {
       }
 
       return {
-          message: '简历上传成功',
-          data: {
-            recordId: feishuResponse.record.record_id,
-            fileName: file.originalname,
-            deliveryChannel: createResumeDto.deliveryChannel,
-            deliveryPosition: createResumeDto.deliveryPosition,
-          },
-        remainingUploads: user.isVip ? '无限' : 5 - user.uploadCount,
+        message: '简历上传成功',
+        data: {
+          recordId: feishuResponse.record.record_id,
+          fileName: file.originalname,
+          deliveryChannel: createResumeDto.deliveryChannel,
+          deliveryPosition: createResumeDto.deliveryPosition,
+        }
       };
       } catch (error) {
         console.error('添加飞书表格数据失败:', {
@@ -217,6 +216,77 @@ export class HrResumeService {
       }
       throw new HttpException(
         `处理简历失败: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * 根据简历ID获取评估信息
+   * @param resumeId 简历记录ID
+   * @param userId 用户ID
+   * @returns 评估信息
+   */
+  async getResumeEvalByResumeId(resumeId: string, userId: number) {
+    console.log('开始获取简历评估信息:', { resumeId, userId });
+    
+    // 验证userId参数
+    if (!userId) {
+      console.error('userId参数缺失');
+      throw new HttpException(
+        '用户ID无效，请重新登录',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    
+    // 获取用户信息
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new HttpException('用户不存在', HttpStatus.NOT_FOUND);
+    }
+    
+    try {
+      // 获取用户的bitable信息
+      const userBitable = await this.usersService.getBitableInfo(userId);
+      if (!userBitable) {
+        throw new HttpException('请先配置多维表格信息', HttpStatus.BAD_REQUEST);
+      }
+
+      // 解析得到apptoken
+      const appToken = userBitable.data.bitableUrl.split('?')[0].split('/').pop();
+      const tableId = userBitable.data.tableId;
+      const bitableToken = userBitable.data.bitableToken;
+
+      console.log('获取简历评估信息请求参数:', { appToken, tableId, bitableToken, resumeId });
+
+      // 调用飞书服务获取简历评估信息
+      const evalResult = await this.feishuService.getResumeEvalById(
+        appToken,
+        tableId,
+        bitableToken,
+        resumeId
+      );
+
+      console.log('简历评估信息获取结果:', evalResult);
+
+      if (!evalResult) {
+        throw new HttpException('获取简历评估信息失败', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+
+      return evalResult;
+    } catch (error) {
+      console.error('获取简历评估信息失败:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        `获取简历评估信息失败: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

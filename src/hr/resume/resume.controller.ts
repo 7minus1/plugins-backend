@@ -6,13 +6,18 @@ import {
   UseGuards,
   Request,
   Body,
+  Get,
+  Param,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { HrResumeService } from './resume.service';
 import { HrJwtAuthGuard } from '../users/guards/hr-jwt-auth.guard';
 import { CreateHrResumeDto } from './dto/create-resume.dto';
+import { GetResumeEvalDto } from './dto/get-resume-eval.dto';
+import { ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 
-// @Controller('resume')
+@ApiTags('简历管理')
 @Controller('hr/resume')
 export class HrResumeController {
   constructor(private readonly resumeService: HrResumeService) {}
@@ -37,11 +42,23 @@ export class HrResumeController {
       },
     }),
   )
+  @ApiOperation({ summary: '上传简历' })
   async uploadResume(
     @UploadedFile() file: Express.Multer.File,
     @Request() req,
     @Body() createResumeDto: CreateHrResumeDto,
   ) {
     return this.resumeService.processResume(file, req.user.userId, createResumeDto);
+  }
+
+  @Get('eval')
+  @UseGuards(HrJwtAuthGuard)
+  @ApiOperation({ summary: '获取简历评估信息' })
+  @ApiQuery({ name: 'resumeId', required: true, description: '简历记录ID' })
+  async getResumeEval(
+    @Query('resumeId') resumeId: string,
+    @Request() req,
+  ) {
+    return this.resumeService.getResumeEvalByResumeId(resumeId, req.user.userId);
   }
 } 

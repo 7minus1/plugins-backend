@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 // import { AuthModule } from './auth/auth.module';
 import { HrModule } from './hr/hr.module';
 import { JobModule } from './job/job.module';
+import { LoggerModule } from './common/logger/logger.module';
 // import { PaymentsModule } from './payments/payments.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { JobModule } from './job/job.module';
     // ResumeModule,
     HrModule,
     JobModule,
+    LoggerModule,
     // AuthModule,
     // PaymentsModule,
   ],
