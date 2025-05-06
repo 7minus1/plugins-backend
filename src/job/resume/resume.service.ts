@@ -1,15 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { FeishuService } from '../../feishu/feishu.service';
 import { AddCompanyDto } from './dto/add-company.dto';
 import { COMPANY_FIELD_NAME_MAP, POSITION_FIELD_NAME_MAP } from '../../common/constants/field-mapping';
 import { JobInfoDto } from './dto/job-info.dto';
 import { TencentCloudService } from '../../tencent-cloud/tencent-cloud.service';
-
+import { JobUsersService } from '../users/users.service';
 @Injectable()
 export class JobResumeService {
   constructor(
     private readonly feishuService: FeishuService,
     private readonly cloudStorage: TencentCloudService,
+    @Inject(forwardRef(() => JobUsersService))
+    private readonly usersService: JobUsersService,
   ) {}
 
   // 检测多维表配置是否成功
@@ -59,6 +61,16 @@ export class JobResumeService {
   ) {
     try {
       console.log('开始处理职位上传请求');
+
+      // 检查用户是否有剩余上传次数
+      const uploadCheck = await this.usersService.checkRemainingUploads(userId);
+      if (!uploadCheck.canUpload) {
+        console.error('用户上传次数已达上限', uploadCheck.message);
+        return {
+          success: false,
+          message: uploadCheck.message
+        };
+      }
       
       // 从URL提取appToken
       const appToken = userPositionBitable.bitableUrl.split('?')[0].split('/').pop();
@@ -148,6 +160,9 @@ export class JobResumeService {
         );
 
         console.log('职位信息添加成功:', response);
+        
+        // 增加用户上传次数
+        await this.usersService.incrementUploadCount(userId);
         
         return {
           success: true,

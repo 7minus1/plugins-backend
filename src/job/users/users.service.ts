@@ -9,8 +9,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JobUser } from './entities/user.entity';
-import { JobUserCompanyBitable } from './entities/user-company-bitable.entity';
-import { JobUserPositionBitable } from './entities/user-position-bitable.entity';
 import { JobUserBitable } from './entities/user-bitable.entity';
 import { CreateJobUserDto } from './dto/create-user.dto';
 import { UpdateJobBitableDto } from './dto/update-bitable.dto';
@@ -42,7 +40,15 @@ export class JobUsersService {
   // 获取免费上传次数限制
   private getFreeUploadLimit(): number {
     return parseInt(
-      this.configService.get<string>('FREE_UPLOAD_LIMIT', '20'),
+      this.configService.get<string>('JOB_FREE_UPLOAD_LIMIT', '20'),
+      10,
+    );
+  }
+
+  // 获取VIP上传次数限制
+  private getVipUploadLimit(): number {
+    return parseInt(
+      this.configService.get<string>('JOB_VIP_UPLOAD_LIMIT', '200'),
       10,
     );
   }
@@ -327,14 +333,62 @@ export class JobUsersService {
   async getUploadCount(userId: number) {
     const user = await this.findById(userId);
     const freeUploadLimit = this.getFreeUploadLimit();
+    const vipUploadLimit = this.getVipUploadLimit();
     return {
       uploadCount: user.uploadCount,
       remainingCount: user.isVip
-        ? -1
+        ? Math.max(0, vipUploadLimit - user.uploadCount)
         : Math.max(0, freeUploadLimit - user.uploadCount),
-      isUnlimited: user.isVip,
+      isUnlimited: false,   // 暂时关闭无限上传
     };
   }
+
+  // 检查用户是否有剩余上传次数
+  async checkRemainingUploads(userId: number): Promise<{ 
+    canUpload: boolean; 
+    message?: string;
+    remainingCount?: number;
+  }> {
+    const user = await this.findById(userId);
+    const freeUploadLimit = this.getFreeUploadLimit();
+    const vipUploadLimit = this.getVipUploadLimit();
+    
+    if (user.isVip) {
+      // VIP用户
+      if (user.uploadCount >= vipUploadLimit) {
+        return {
+          canUpload: false,
+          message: `VIP用户上传次数已达上限（${vipUploadLimit}次）`,
+          remainingCount: 0
+        };
+      }
+      return {
+        canUpload: true,
+        remainingCount: vipUploadLimit - user.uploadCount
+      };
+    } else {
+      // 普通用户
+      if (user.uploadCount >= freeUploadLimit) {
+        return {
+          canUpload: false,
+          message: `非会员用户上传次数已达上限（${freeUploadLimit}次），请升级为会员继续使用`,
+          remainingCount: 0
+        };
+      }
+      return {
+        canUpload: true,
+        remainingCount: freeUploadLimit - user.uploadCount
+      };
+    }
+  }
+
+  // 增加上传次数
+  async incrementUploadCount(userId: number): Promise<JobUser> {
+    const user = await this.findById(userId);
+    user.uploadCount += 1;
+    return await this.usersRepository.save(user);
+  }
+
 
   /**
    * 更新用户VIP状态
