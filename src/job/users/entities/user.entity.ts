@@ -4,7 +4,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { JobVipType } from './vip-type.entity';
 
 @Entity('job_user') // 使用不同的表名
 export class JobUser {
@@ -28,6 +31,13 @@ export class JobUser {
 
   @Column({ type: 'timestamp', nullable: true })
   vipExpireDate: Date;
+
+  @Column({ nullable: true })
+  vipTypeId: number;
+
+  @ManyToOne(() => JobVipType, { nullable: true })
+  @JoinColumn({ name: 'vipTypeId' })
+  vipType: JobVipType;
 
   @Column({ default: 0 })
   uploadCount: number;

@@ -712,6 +712,9 @@ export class FeishuService {
       });
 
       // 构建查询条件：简历版本字段包含职位名称-公司名称
+      // TODO
+      // positionName = '产品经理';
+      // companyName = '拓竹科技';
       const versionPattern = `${positionName}-${companyName}`;
       
       // 查询符合条件的记录

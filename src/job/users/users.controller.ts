@@ -201,4 +201,32 @@ export class JobUsersController {
   async getBitableInfo(@Request() req) {
     return this.usersService.getBitableInfo(req.user.userId);
   }
+
+  @UseGuards(JobJwtAuthGuard)
+  @Put('vip-status')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新用户VIP状态' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  async updateVipStatus(
+    @Request() req,
+    @Body() data: { isVip: boolean; vipExpireDate: Date; vipTypeId?: number }
+  ) {
+    try {
+      const user = await this.usersService.updateVipStatus(
+        req.user.userId,
+        data.isVip,
+        data.vipExpireDate,
+        data.vipTypeId
+      );
+      return {
+        success: true,
+        data: user
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
 }

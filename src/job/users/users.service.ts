@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JobUser } from './entities/user.entity';
 import { JobUserBitable } from './entities/user-bitable.entity';
+import { JobVipType } from './entities/vip-type.entity';
 import { CreateJobUserDto } from './dto/create-user.dto';
 import { UpdateJobBitableDto } from './dto/update-bitable.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -29,6 +30,8 @@ export class JobUsersService {
     private usersRepository: Repository<JobUser>,
     @InjectRepository(JobUserBitable)
     private userBitableRepository: Repository<JobUserBitable>,
+    @InjectRepository(JobVipType)
+    private vipTypeRepository: Repository<JobVipType>,
     private jwtService: JwtService,
     private smsService: JobSmsService,
     private redisService: JobRedisService,
@@ -46,11 +49,23 @@ export class JobUsersService {
   }
 
   // 获取VIP上传次数限制
-  private getVipUploadLimit(): number {
-    return parseInt(
-      this.configService.get<string>('JOB_VIP_UPLOAD_LIMIT', '200'),
-      10,
-    );
+  private async getVipUploadLimit(userId: number): Promise<number> {
+    const user = await this.findById(userId);
+    
+    if (!user.isVip || !user.vipTypeId) {
+      return 0;
+    }
+    
+    const vipType = await this.vipTypeRepository.findOne({
+      where: { id: user.vipTypeId, isActive: true }
+    });
+    
+    if (!vipType) {
+      return 0;
+    }
+    console.log('vipType', vipType);
+    console.log('vipType.uploadLimit', vipType.uploadLimit);
+    return vipType.uploadLimit;
   }
 
   private generateRandomUsername(): string {
@@ -333,13 +348,22 @@ export class JobUsersService {
   async getUploadCount(userId: number) {
     const user = await this.findById(userId);
     const freeUploadLimit = this.getFreeUploadLimit();
-    const vipUploadLimit = this.getVipUploadLimit();
+    
+    if (!user.isVip) {
+      return {
+        uploadCount: user.uploadCount,
+        remainingCount: Math.max(0, freeUploadLimit - user.uploadCount),
+        isUnlimited: false,
+      };
+    }
+    
+    // 获取VIP用户的上传限制
+    const vipUploadLimit = await this.getVipUploadLimit(userId);
+    
     return {
       uploadCount: user.uploadCount,
-      remainingCount: user.isVip
-        ? Math.max(0, vipUploadLimit - user.uploadCount)
-        : Math.max(0, freeUploadLimit - user.uploadCount),
-      isUnlimited: false,   // 暂时关闭无限上传
+      remainingCount: Math.max(0, vipUploadLimit - user.uploadCount),
+      isUnlimited: false,
     };
   }
 
@@ -351,22 +375,8 @@ export class JobUsersService {
   }> {
     const user = await this.findById(userId);
     const freeUploadLimit = this.getFreeUploadLimit();
-    const vipUploadLimit = this.getVipUploadLimit();
     
-    if (user.isVip) {
-      // VIP用户
-      if (user.uploadCount >= vipUploadLimit) {
-        return {
-          canUpload: false,
-          message: `VIP用户上传次数已达上限（${vipUploadLimit}次）`,
-          remainingCount: 0
-        };
-      }
-      return {
-        canUpload: true,
-        remainingCount: vipUploadLimit - user.uploadCount
-      };
-    } else {
+    if (!user.isVip) {
       // 普通用户
       if (user.uploadCount >= freeUploadLimit) {
         return {
@@ -380,6 +390,30 @@ export class JobUsersService {
         remainingCount: freeUploadLimit - user.uploadCount
       };
     }
+    
+    // VIP用户
+    const vipUploadLimit = await this.getVipUploadLimit(userId);
+    
+    if (vipUploadLimit === 0) {
+      return {
+        canUpload: false,
+        message: '您的VIP类型无效或已过期，请重新开通VIP',
+        remainingCount: 0
+      };
+    }
+    
+    if (user.uploadCount >= vipUploadLimit) {
+      return {
+        canUpload: false,
+        message: `VIP用户上传次数已达上限（${vipUploadLimit}次）`,
+        remainingCount: 0
+      };
+    }
+    
+    return {
+      canUpload: true,
+      remainingCount: vipUploadLimit - user.uploadCount
+    };
   }
 
   // 增加上传次数
@@ -388,7 +422,6 @@ export class JobUsersService {
     user.uploadCount += 1;
     return await this.usersRepository.save(user);
   }
-
 
   /**
    * 更新用户VIP状态
@@ -400,6 +433,7 @@ export class JobUsersService {
     userId: number,
     isVip: boolean,
     vipExpireDate: Date,
+    vipTypeId?: number,
   ): Promise<JobUser> {
     const user = await this.findById(userId);
     if (!user) {
@@ -408,8 +442,66 @@ export class JobUsersService {
 
     user.isVip = isVip;
     user.vipExpireDate = vipExpireDate;
+    
+    if (vipTypeId) {
+      // 验证VIP类型是否存在
+      const vipType = await this.vipTypeRepository.findOne({
+        where: { id: vipTypeId, isActive: true }
+      });
+      
+      if (!vipType) {
+        throw new NotFoundException('VIP类型不存在或已禁用');
+      }
+      
+      user.vipTypeId = vipTypeId;
+    } else if (!isVip) {
+      // 如果取消VIP，清除VIP类型
+      user.vipTypeId = null;
+    }
 
     return await this.usersRepository.save(user);
+  }
+
+  // 获取所有VIP类型
+  async getAllVipTypes(): Promise<JobVipType[]> {
+    return await this.vipTypeRepository.find({
+      where: { isActive: true },
+      order: { uploadLimit: 'ASC' }
+    });
+  }
+  
+  // 创建VIP类型
+  async createVipType(name: string, uploadLimit: number, description?: string): Promise<JobVipType> {
+    const vipType = this.vipTypeRepository.create({
+      name,
+      uploadLimit,
+      description,
+      isActive: true
+    });
+    
+    return await this.vipTypeRepository.save(vipType);
+  }
+  
+  // 更新VIP类型
+  async updateVipType(id: number, data: Partial<JobVipType>): Promise<JobVipType> {
+    const vipType = await this.vipTypeRepository.findOne({
+      where: { id }
+    });
+    
+    if (!vipType) {
+      throw new NotFoundException('VIP类型不存在');
+    }
+    
+    Object.assign(vipType, data);
+    return await this.vipTypeRepository.save(vipType);
+  }
+  
+  // 删除VIP类型
+  async deleteVipType(id: number): Promise<void> {
+    const result = await this.vipTypeRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('VIP类型不存在');
+    }
   }
 
   private extractTableIdFromUrl(url: string): string {

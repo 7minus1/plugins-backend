@@ -1,40 +1,45 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule } from '@nestjs/jwt';
 import { JobUsersService } from './users.service';
 import { JobUsersController } from './users.controller';
+import { JobVipTypeController } from './vip-type.controller';
 import { JobUser } from './entities/user.entity';
 import { JobUserBitable } from './entities/user-bitable.entity';
+import { JobVipType } from './entities/vip-type.entity';
+import { JobUserPositionBitable } from './entities/user-position-bitable.entity';
+import { JobUserCompanyBitable } from './entities/user-company-bitable.entity';
+import { JobUserResumeBitable } from './entities/user-resume-bitable.entity';
+import { JobSmsModule } from './services/sms.module';
+import { JobRedisModule } from './services/redis.module';
+import { JobResumeModule } from '../resume/resume.module';
+import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JobJwtStrategy } from './jwt.strategy';
-import { JobSmsService } from './services/sms.service';
-import { JobRedisService } from './services/redis.service';
-import { JobResumeModule } from '../resume/resume.module';
 
 @Module({
   imports: [
-    ConfigModule,
     TypeOrmModule.forFeature([
       JobUser,
-      JobUserBitable
+      JobUserBitable,
+      JobVipType,
+      JobUserPositionBitable,
+      JobUserCompanyBitable,
+      JobUserResumeBitable,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
+        secret: configService.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: '7d' },
       }),
       inject: [ConfigService],
     }),
-    JobResumeModule,
+    JobSmsModule,
+    JobRedisModule,
+    forwardRef(() => JobResumeModule),
   ],
-  controllers: [JobUsersController],
-  providers: [
-    JobUsersService, 
-    JobJwtStrategy, 
-    JobSmsService, 
-    JobRedisService,
-  ],
+  controllers: [JobUsersController, JobVipTypeController],
+  providers: [JobUsersService, JobJwtStrategy],
   exports: [JobUsersService],
 })
 export class JobUsersModule {} 
