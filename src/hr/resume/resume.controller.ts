@@ -61,4 +61,17 @@ export class HrResumeController {
   ) {
     return this.resumeService.getResumeEvalByResumeId(resumeId, req.user.userId);
   }
+
+  @Get('test')
+  async apiTest() {
+    return this.resumeService.test();
+    return 'test';
+  }
+
+  @Post('test/position')
+  async testPosition(
+    @Body('positionInfo') positionInfo: string,
+  ) {
+    return this.resumeService.testPosition(positionInfo);
+  }
 } 
