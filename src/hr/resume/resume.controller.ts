@@ -64,7 +64,7 @@ export class HrResumeController {
 
   @Get('test')
   async apiTest() {
-    return this.resumeService.test();
+    // return this.resumeService.test();
     return 'test';
   }
 
