@@ -44,6 +44,7 @@ async function bootstrap() {
       'https://h.liepin.com',
       'https://exmail.qq.com',
       'https://www.zhipin.com',
+      'http://localhost:3000',
       /^chrome-extension:\/\/.*$/,
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

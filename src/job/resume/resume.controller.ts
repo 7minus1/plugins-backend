@@ -450,4 +450,18 @@ export class JobResumeController {
       };
     }
   }
+  
+  @Get('test')
+  async apiTest() {
+    // return this.resumeService.test();
+    return 'test';
+  }
+
+  @Post('test/position')
+  @UseGuards(JobJwtAuthGuard)
+  async testPosition(
+    @Body('positionInfo') positionInfo: string,
+  ) {
+    return this.resumeService.testPosition(positionInfo);
+  }
 } 
