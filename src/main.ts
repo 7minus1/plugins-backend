@@ -44,6 +44,7 @@ async function bootstrap() {
       'https://h.liepin.com',
       'https://exmail.qq.com',
       'https://www.zhipin.com',
+      'http://www.taleap.net',
       'http://115.159.6.63:3000',
       'http://localhost:3000',
       /^chrome-extension:\/\/.*$/,
