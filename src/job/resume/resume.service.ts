@@ -351,11 +351,22 @@ export class JobResumeService {
 
   
   // 测试api调用
-  async testPosition(positionInfo: any) {
+  async testPosition(positionInfo: any, userId: number) {
     // const client = new OpenAI({
     //   apiKey: process.env.MOONSHOT_API_KEY,
     //   baseURL: 'https://api.moonshot.cn/v1',
     // });
+
+      // 检查用户是否有剩余上传次数
+      const uploadCheck = await this.usersService.checkRemainingUploads(userId);
+      if (!uploadCheck.canUpload) {
+        console.error('用户上传次数已达上限', uploadCheck.message);
+        return {
+          success: false,
+          message: uploadCheck.message
+        };
+      }
+
     try {
       
       // 1. 调用KIMI提取职位图像中的信息
@@ -435,15 +446,20 @@ export class JobResumeService {
           recommendLevel = '不推荐';
         }
       }
+
+      // 增加用户上传次数
+      await this.usersService.incrementUploadCount(userId);
+
       // 返回 recommendLevel 和 evalResult
       return {
+        success: true,
         recommendLevel,
         evalResult
       };
 
     } catch (error) {
-      console.error('Error processing file:', error);
-      throw new Error('Failed to process file');
+      console.error('Error processing:', error);
+      throw new Error('Failed to process');
     }
   }
 

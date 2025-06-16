@@ -461,7 +461,9 @@ export class JobResumeController {
   @UseGuards(JobJwtAuthGuard)
   async testPosition(
     @Body('positionInfo') positionInfo: string,
+    @Request() req,
   ) {
-    return this.resumeService.testPosition(positionInfo);
+    const userId = req.user.userId;
+    return this.resumeService.testPosition(positionInfo, userId);
   }
 } 
