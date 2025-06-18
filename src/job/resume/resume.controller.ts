@@ -10,6 +10,7 @@ import { ResumeVersionDto, ResumeVersionResponse, GreetMessageResponse, ResumeIm
 import { Response } from 'express';
 import * as fs from 'fs';
 import { join } from 'path';
+import { UpdateResumeContentDto } from './dto/resume-content.dto';
 
 @ApiTags('求职简历管理')
 @Controller('job/resume')
@@ -465,5 +466,22 @@ export class JobResumeController {
   ) {
     const userId = req.user.userId;
     return this.resumeService.testPosition(positionInfo, userId);
+  }
+
+  @Get('content')
+  @UseGuards(JobJwtAuthGuard)
+  @ApiOperation({ summary: '获取简历内容' })
+  async getResumeContent(@Request() req) {
+    return this.resumeService.getResumeContent(req.user.userId);
+  }
+
+  @Post('content')
+  @UseGuards(JobJwtAuthGuard)
+  @ApiOperation({ summary: '更新简历内容' })
+  async updateResumeContent(
+    @Request() req,
+    @Body() updateDto: UpdateResumeContentDto,
+  ) {
+    return this.resumeService.updateResumeContent(req.user.userId, updateDto);
   }
 } 

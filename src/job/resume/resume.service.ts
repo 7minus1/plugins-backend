@@ -9,6 +9,10 @@ import { KIMI_SYSTEM_PROMPT, RESUME_PARSE_PROMPT, POSITION_PROFILE, POSITION_INF
 import { getResumeEvalPrompt, getResumeMatchPrompt } from 'src/common/constants/prompt';
 import { createReadStream } from 'fs';
 import OpenAI from 'openai';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { JobResume } from '../users/entities/job-resume.entity';
+import { UpdateResumeContentDto } from './dto/resume-content.dto';
 
 @Injectable()
 export class JobResumeService {
@@ -17,6 +21,8 @@ export class JobResumeService {
     private readonly cloudStorage: TencentCloudService,
     @Inject(forwardRef(() => JobUsersService))
     private readonly usersService: JobUsersService,
+    @InjectRepository(JobResume)
+    private readonly resumeRepository: Repository<JobResume>,
   ) {}
 
   // 检测多维表配置是否成功
@@ -401,11 +407,15 @@ export class JobResumeService {
       const companyName = positionInfo.company_name;
       const positionName = positionInfo.position_name;
       const positionDesp = positionInfo.position_description;
-      console.log('companyName', companyName);
-      console.log('positionName', positionName);
-      console.log('positionDesp', positionDesp);
+      // console.log('companyName', companyName);
+      // console.log('positionName', positionName);
+      // console.log('positionDesp', positionDesp);
 
-      const MATCH_PROMPT = getResumeMatchPrompt(companyName, positionName, positionDesp, null);
+      // 根据用户id查询简历内容
+      const resumeContent = await this.getResumeContent(userId);
+      console.log('resumeContent', resumeContent);
+
+      const MATCH_PROMPT = getResumeMatchPrompt(companyName, positionName, positionDesp, resumeContent);
       
       // 调用火山api
       const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
@@ -523,5 +533,30 @@ export class JobResumeService {
       console.error('Error processing file:', error);
       throw new Error('Failed to process file');
     }
+  }
+
+  async getResumeContent(userId: number) {
+    const resume = await this.resumeRepository.findOne({
+      where: { userId },
+    });
+    return resume?.content || '';
+  }
+
+  async updateResumeContent(userId: number, updateDto: UpdateResumeContentDto) {
+    let resume = await this.resumeRepository.findOne({
+      where: { userId },
+    });
+
+    if (!resume) {
+      resume = this.resumeRepository.create({
+        userId,
+        content: updateDto.content,
+      });
+    } else {
+      resume.content = updateDto.content;
+    }
+
+    await this.resumeRepository.save(resume);
+    return resume;
   }
 } 

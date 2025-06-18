@@ -6,9 +6,6 @@ import { JobVipTypeController } from './vip-type.controller';
 import { JobUser } from './entities/user.entity';
 import { JobUserBitable } from './entities/user-bitable.entity';
 import { JobVipType } from './entities/vip-type.entity';
-import { JobUserPositionBitable } from './entities/user-position-bitable.entity';
-import { JobUserCompanyBitable } from './entities/user-company-bitable.entity';
-import { JobUserResumeBitable } from './entities/user-resume-bitable.entity';
 import { JobSmsModule } from './services/sms.module';
 import { JobRedisModule } from './services/redis.module';
 import { JobResumeModule } from '../resume/resume.module';
@@ -21,10 +18,7 @@ import { JobJwtStrategy } from './jwt.strategy';
     TypeOrmModule.forFeature([
       JobUser,
       JobUserBitable,
-      JobVipType,
-      JobUserPositionBitable,
-      JobUserCompanyBitable,
-      JobUserResumeBitable,
+      JobVipType
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

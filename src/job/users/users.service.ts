@@ -51,11 +51,11 @@ export class JobUsersService {
   // 获取VIP上传次数限制
   private async getVipUploadLimit(userId: number): Promise<number> {
     const user = await this.findById(userId);
-    
+    // console.log('user', user);
     if (!user.isVip || !user.vipTypeId) {
       return 0;
     }
-    
+    // console.log('user.vipTypeId', user.vipTypeId);
     const vipType = await this.vipTypeRepository.findOne({
       where: { id: user.vipTypeId, isActive: true }
     });
@@ -359,6 +359,7 @@ export class JobUsersService {
     
     // 获取VIP用户的上传限制
     const vipUploadLimit = await this.getVipUploadLimit(userId);
+    // console.log('vipUploadLimit', vipUploadLimit);
     
     return {
       uploadCount: user.uploadCount,
